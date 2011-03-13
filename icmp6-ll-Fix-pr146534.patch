@@ -1,0 +1,31 @@
+# HG changeset patch
+# Parent eb50a7266e0316ea8929f8123cf3d8e5f2c0f07c
+PR/146534 [icmpv6] wrong source address in echo reply
+
+diff -r eb50a7266e03 sys/netinet6/icmp6.c
+--- a/sys/netinet6/icmp6.c
++++ b/sys/netinet6/icmp6.c
+@@ -2162,8 +2162,21 @@
+ 	}
+ 
+ 	if ((srcp != NULL) && 
+-	    (in6_addrscope(srcp) != in6_addrscope(&ip6->ip6_src)))
+-		srcp = NULL;
++		(in6_addrscope(srcp) != in6_addrscope(&ip6->ip6_src))) {
++			struct sockaddr_in6 sin6;
++ 
++		bzero(&sin6, sizeof(sin6));
++		sin6.sin6_family = AF_INET6;
++		sin6.sin6_len = sizeof(sin6);
++		sin6.sin6_addr = origdst;
++
++		ia = (struct in6_ifaddr *)
++			ifa_ifwithaddr((struct sockaddr *)&sin6);
++
++		if (ia && (ia->ia6_flags & IN6_IFF_ANYCAST))
++			srcp = NULL;
++	}
++
+ 
+ 	if (srcp == NULL) {
+ 		int e;
