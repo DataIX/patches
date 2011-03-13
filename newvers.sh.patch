@@ -1,0 +1,149 @@
+# HG changeset patch
+# Parent 70128ad036a053c7cc0a07032659f4ee189ad053
+
+diff -r 70128ad036a0 sys/conf/newvers.sh
+--- a/sys/conf/newvers.sh
++++ b/sys/conf/newvers.sh
+@@ -39,15 +39,18 @@
+ RELEASE="${REVISION}-${BRANCH}"
+ VERSION="${TYPE} ${RELEASE}"
+ 
++# These are here so we don't have to work in reverse later on.
++SRCDIR=$(dirname $0)/../..
++SYSDIR=${SRCDIR}/sys
++
+ if [ "X${PARAMFILE}" != "X" ]; then
+ 	RELDATE=$(awk '/__FreeBSD_version.*propagated to newvers/ {print $3}' \
+ 		${PARAMFILE})
+ else
+ 	RELDATE=$(awk '/__FreeBSD_version.*propagated to newvers/ {print $3}' \
+-		$(dirname $0)/../sys/param.h)
++		${SYSDIR}/sys/param.h)
+ fi
+ 
+-
+ b=share/examples/etc/bsd-style-copyright
+ year=`date '+%Y'`
+ # look for copyright template
+@@ -78,65 +81,77 @@
+ "
+ 
+ LC_ALL=C; export LC_ALL
+-if [ ! -r version ]
+-then
+-	echo 0 > version
++if [ ! -r version ]; then
++	echo 0 >version
+ fi
+ 
+-touch version
+ v=`cat version` u=${USER:-root} d=`pwd` h=${HOSTNAME:-`hostname`} t=`date`
+ i=`${MAKE:-make} -V KERN_IDENT`
+ 
+-case "$d" in
+-*/sys/*)
+-	SRCDIR=${d##*obj}
+-	if [ -n "$MACHINE" ]; then
+-		SRCDIR=${SRCDIR##/$MACHINE}
+-	fi
+-	SRCDIR=${SRCDIR%%/sys/*}
+-
+-	for dir in /bin /usr/bin /usr/local/bin; do
+-		if [ -d "${SRCDIR}/sys/.svn" -a -x "${dir}/svnversion" ] ; then
++if [ -d "${SRCDIR}/.svn" -o -d "${SYSDIR}/.svn" ]; then
++	for dir in /usr/bin ${LOCALBASE:-/usr/local}/bin; do
++		if [ -x "${dir}/svn" ]; then
+ 			svnversion=${dir}/svnversion
+ 			break
+ 		fi
+-		if [ -d "${SRCDIR}/.git" -a -x "${dir}/git" ] ; then
+-			git_cmd="${dir}/git --git-dir=${SRCDIR}/.git"
++	done
++	if [ -n "$svnversion" ] ; then
++		svnrev=" r`cd ${SYSDIR} && $svnversion`"
++	fi
++fi
++
++if [ -d "${SRCDIR}/.hg" -o -d "${SYSDIR}/.hg" ]; then
++	for dir in /usr/bin ${LOCALBASE:-/usr/local}/bin; do
++		if [ -x "${dir}/hg" ]; then
++			hg=${dir}/hg
++			break
++		fi
++	done
++	if [ -n "$hg" ]; then
++		hgrev=" `cd ${SYSDIR} && $hg tip --template '{rev}:{node|short}'`"
++	fi
++fi
++
++if [ -d "${SRCDIR}/.git" -o -d "${SYSDIR}/.git" ]; then
++	for dir in /usr/bin ${LOCALBASE:-/usr/local}; do
++		if [ -x "${dir}/git" ]; then
++			if [ -d "${SRCDIR}/.git" ]; then
++				git="${dir}/git --git-dir=${SRCDIR}/.git"
++				git="${git} --work-tree=${SRCDIR}"
++			else
++				git="${dir}/git --git-dir=${SYSDIR}/.git"
++				git="${git} --work-tree=${SYSDIR}"
++			fi
+ 			break
+ 		fi
+ 	done
+ 
+-	if [ -n "$svnversion" ] ; then
+-		svn=" r`cd ${SRCDIR}/sys && $svnversion`"
+-	fi
+-	if [ -n "$git_cmd" ] ; then
+-		git=`$git_cmd rev-parse --verify --short HEAD 2>/dev/null`
+-		svn=`$git_cmd svn find-rev $git 2>/dev/null`
+-		if [ -n "$svn" ] ; then
+-			svn=" r${svn}"
+-			git="=${git}"
++	if [ -n "$git" ] ; then
++		gitrev="`$git rev-parse --verify --short HEAD 2>/dev/null`"
++		gitsvnrev="`$git svn find-rev $gitrev 2>/dev/null`"
++		if [ -n "${gitsvnrev}" ] ; then
++			svnrev=" r${gitsvnrev}"
++			gitrev=" ${gitrev}"
+ 		else
+-			svn=`$git_cmd log | fgrep 'git-svn-id:' | head -1 | \
+-			     sed -n 's/^.*@\([0-9][0-9]*\).*$/\1/p'`
+-			if [ -n $svn ] ; then
+-				svn=" r${svn}"
+-				git="+${git}"
++			gitsvnid="`$git log |sed -n '/git-svn-id:/ {
++			s/.*@\([[:digit:]]\{1,\}\).*/\1/p; q; }'`"
++			if [ -n "${gitsvnid}" ]; then
++				svnrev=" r${gitsvnid}"
++				gitrev="+${gitrev}"
+ 			else
+-				git=" ${git}"
++				gitrev=" ${gitrev}"
+ 			fi
+ 		fi
+-		if $git_cmd --work-tree=${SRCDIR} diff-index \
+-		    --name-only HEAD | read dummy; then
+-			git="${git}-dirty"
++		if [ -n "`$git diff-index --name-only HEAD`" ]; then
++			gitrev="${gitrev}-dirty"
+ 		fi
+ 	fi
+-	;;
+-esac
++fi
+ 
+ cat << EOF > vers.c
+ $COPYRIGHT
+-#define SCCSSTR "@(#)${VERSION} #${v}${svn}${git}: ${t}"
+-#define VERSTR "${VERSION} #${v}${svn}${git}: ${t}\\n    ${u}@${h}:${d}\\n"
++#define SCCSSTR "@(#)${VERSION} #${v}${svnrev}${gitrev}${hgrev} ${t}"
++#define VERSTR "${VERSION} #${v}${svnrev}${gitrev}${hgrev} ${t}\\n 	${u}@${h}:${d}\\n"
+ #define RELSTR "${RELEASE}"
+ 
+ char sccs[sizeof(SCCSSTR) > 128 ? sizeof(SCCSSTR) : 128] = SCCSSTR;
+@@ -147,4 +162,4 @@
+ char kern_ident[] = "${i}";
+ EOF
+ 
+-echo `expr ${v} + 1` > version
++echo $((${v}+1)) >version
