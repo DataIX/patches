@@ -1,0 +1,120 @@
+# HG changeset patch
+# Parent f3a72aa207c1a9f93e6262f14979479f83fb10ec
+
+diff -r f3a72aa207c1 bin/ps/print.c
+--- a/bin/ps/print.c
++++ b/bin/ps/print.c
+@@ -430,7 +430,7 @@
+ 	VAR *v;
+ 	time_t then;
+ 	struct tm *tp;
+-	static int use_ampm = -1;
++	static int use_time24 = -1;
+ 	char buf[100];
+ 
+ 	v = ve->var;
+@@ -438,16 +438,16 @@
+ 		(void)printf("%-*s", v->width, "-");
+ 		return;
+ 	}
+-	if (use_ampm < 0)
+-		use_ampm = (*nl_langinfo(T_FMT_AMPM) != '\0');
++	if (use_time24 < 0)
++		use_time24 = (*nl_langinfo(T_FMT) != '\0');
+ 	then = k->ki_p->ki_start.tv_sec;
+ 	tp = localtime(&then);
+ 	if (now - k->ki_p->ki_start.tv_sec < 24 * 3600) {
+ 		(void)strftime(buf, sizeof(buf),
+-		    use_ampm ? "%l:%M%p" : "%k:%M  ", tp);
++		    use_time24 ? "%H:%M" : "%l:%M%p  ", tp);
+ 	} else if (now - k->ki_p->ki_start.tv_sec < 7 * 86400) {
+ 		(void)strftime(buf, sizeof(buf),
+-		    use_ampm ? "%a%I%p" : "%a%H  ", tp);
++		    use_time24 ? "%a%H" : "%a%I%p  ", tp);
+ 	} else
+ 		(void)strftime(buf, sizeof(buf), "%e%b%y", tp);
+ 	(void)printf("%-*s", v->width, buf);
+diff -r f3a72aa207c1 usr.bin/w/extern.h
+--- a/usr.bin/w/extern.h
++++ b/usr.bin/w/extern.h
+@@ -35,7 +35,7 @@
+  */
+ 
+ 
+-extern	int use_ampm;
++extern	int use_time24;
+ 
+ struct kinfo_proc;
+ int	pr_attime(time_t *, time_t *);
+diff -r f3a72aa207c1 usr.bin/w/pr_time.c
+--- a/usr.bin/w/pr_time.c
++++ b/usr.bin/w/pr_time.c
+@@ -75,23 +75,23 @@
+ 		 tm.tm_year != tp.tm_year) {
+ 	/* The line below does not take DST into consideration */
+ 	/* else if (*now / 86400 != *started / 86400) { */
+-		fmt = use_ampm ? L"%a%I%p" : L"%a%H";
++		fmt = use_time24 ? L"%a%H" : L"%a%I%p";
+ 	}
+ 
+-	/* Default is hh:mm{am,pm}. */
++	/* Default is hh:mm. */
+ 	else {
+-		fmt = use_ampm ? L"%l:%M%p" : L"%k:%M";
++		fmt = use_time24 ? L"%H:%M" : L"%l:%M%p";
+ 	}
+ 
+ 	(void)wcsftime(buf, sizeof(buf), fmt, &tp);
+ 	len = wcslen(buf);
+ 	width = wcswidth(buf, len);
+ 	if (len == width)
+-		(void)wprintf(L"%-7.7ls", buf);
++		(void)wprintf(L" %-7.7ls", buf);
+ 	else if (width < 7)
+-		(void)wprintf(L"%ls%.*s", buf, 7 - width, "      ");
++		(void)wprintf(L" %ls%.*s", buf, 7 - width, "      ");
+ 	else {
+-		(void)wprintf(L"%ls", buf);
++		(void)wprintf(L" %ls", buf);
+ 		offset = width - 7;
+ 	}
+ 	return (offset);
+diff -r f3a72aa207c1 usr.bin/w/w.c
+--- a/usr.bin/w/w.c
++++ b/usr.bin/w/w.c
+@@ -100,7 +100,7 @@
+ int		nflag;		/* true if -n flag: don't convert addrs */
+ int		dflag;		/* true if -d flag: output debug info */
+ int		sortidle;	/* sort by idle time */
+-int		use_ampm;	/* use AM/PM time */
++int		use_time24;	/* use 24 hour time */
+ int             use_comma;      /* use comma as floats separator */
+ char	      **sel_users;	/* login array of particular users selected */
+ 
+@@ -145,7 +145,7 @@
+ 	char *dot;
+ 
+ 	(void)setlocale(LC_ALL, "");
+-	use_ampm = (*nl_langinfo(T_FMT_AMPM) != '\0');
++	use_time24 = (*nl_langinfo(T_FMT) != '\0');
+ 	use_comma = (*nl_langinfo(RADIXCHAR) != ',');
+ 
+ 	/* Are we w(1) or uptime(1)? */
+@@ -270,7 +270,7 @@
+ #define HEADER_USER		"USER"
+ #define HEADER_TTY		"TTY"
+ #define HEADER_FROM		"FROM"
+-#define HEADER_LOGIN_IDLE	"LOGIN@  IDLE "
++#define HEADER_LOGIN_IDLE	"LOGIN@   IDLE "
+ #define HEADER_WHAT		"WHAT\n"
+ #define WUSED  (UT_NAMESIZE + UT_LINESIZE + W_DISPHOSTSIZE + \
+ 		sizeof(HEADER_LOGIN_IDLE) + 3)	/* header width incl. spaces */ 
+@@ -429,7 +429,7 @@
+ 	 * Print time of day.
+ 	 */
+ 	if (strftime(buf, sizeof(buf),
+-	    use_ampm ? "%l:%M%p" : "%k:%M", localtime(nowp)) != 0)
++	    use_time24 ? "%H:%M" : "%l:%M%p", localtime(nowp)) != 0)
+ 		(void)printf("%s ", buf);
+ 	/*
+ 	 * Print how long system has been up.
