@@ -1,0 +1,15 @@
+# HG changeset patch
+# Parent a5361bfaa2f26b6eba2f98be7bd4df934e04df57
+Fix cyclic_clock_func undefined with no apic device.
+
+diff -r a5361bfaa2f2 sys/x86/isa/clock.c
+--- a/sys/x86/isa/clock.c
++++ b/sys/x86/isa/clock.c
+@@ -82,6 +82,7 @@
+ 
+ #ifdef KDTRACE_HOOKS
+ #include <sys/dtrace_bsd.h>
++cyclic_clock_func_t	cyclic_clock_func[MAXCPU];
+ #endif
+ 
+ #define	TIMER_DIV(x) ((i8254_freq + (x) / 2) / (x))
