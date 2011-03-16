@@ -1,0 +1,82 @@
+# HG changeset patch
+# Parent 8be1bcb00b6a578792ed445e3328bb25916b30fe
+open(O_NOFOLLOW) error when encountered symlink
+
+diff -r 8be1bcb00b6a lib/libc/sys/open.2
+--- a/lib/libc/sys/open.2
++++ b/lib/libc/sys/open.2
+@@ -295,6 +295,9 @@
+ .Dv O_APPEND
+ is not specified.
+ .It Bq Er ELOOP
++.Dv O_NOFOLLOW
++was specified and the target is a symbolic link.
++.It Bq Er ELOOP
+ Too many symbolic links were encountered in translating the pathname.
+ .It Bq Er EISDIR
+ The named file is a directory, and the arguments specify
+@@ -309,9 +312,6 @@
+ The process has already reached its limit for open file descriptors.
+ .It Bq Er ENFILE
+ The system file table is full.
+-.It Bq Er EMLINK
+-.Dv O_NOFOLLOW
+-was specified and the target is a symbolic link.
+ .It Bq Er ENXIO
+ The named file is a character special or block
+ special file, and the device associated with this special file
+diff -r 8be1bcb00b6a sys/kern/vfs_vnops.c
+--- a/sys/kern/vfs_vnops.c
++++ b/sys/kern/vfs_vnops.c
+@@ -193,7 +193,7 @@
+ 		vp = ndp->ni_vp;
+ 	}
+ 	if (vp->v_type == VLNK) {
+-		error = EMLINK;
++		error = ELOOP;
+ 		goto bad;
+ 	}
+ 	if (vp->v_type == VSOCK) {
+diff -r 8be1bcb00b6a usr.bin/cmp/cmp.c
+--- a/usr.bin/cmp/cmp.c
++++ b/usr.bin/cmp/cmp.c
+@@ -111,11 +111,14 @@
+ 		fd1 = 0;
+ 		file1 = "stdin";
+ 	}
+-	else if ((fd1 = open(file1, oflag, 0)) < 0 && errno != EMLINK) {
+-		if (!sflag)
+-			err(ERR_EXIT, "%s", file1);
+-		else
+-			exit(ERR_EXIT);
++	else if ((fd1 = open(file1, oflag, 0)) < 0) {
++		if (errno != ELOOP || stat(file1, &sb1) == -1 ||
++		    !S_ISLNK(sb1.st_mode)) {
++			if (!sflag)
++				err(ERR_EXIT, "%s", file1);
++			else
++				exit(ERR_EXIT);
++		}
+ 	}
+ 	if (strcmp(file2 = argv[1], "-") == 0) {
+ 		if (special)
+@@ -125,11 +128,14 @@
+ 		fd2 = 0;
+ 		file2 = "stdin";
+ 	}
+-	else if ((fd2 = open(file2, oflag, 0)) < 0 && errno != EMLINK) {
+-		if (!sflag)
+-			err(ERR_EXIT, "%s", file2);
+-		else
+-			exit(ERR_EXIT);
++	else if ((fd2 = open(file2, oflag, 0)) < 0) {
++		if (errno != ELOOP || stat(file2, &sb2) == -1 ||
++		    !S_ISLNK(sb2.st_mode)) {
++			if (!sflag)
++				err(ERR_EXIT, "%s", file2);
++			else
++				exit(ERR_EXIT);
++		}
+ 	}
+ 
+ 	skip1 = argc > 2 ? strtol(argv[2], NULL, 0) : 0;
