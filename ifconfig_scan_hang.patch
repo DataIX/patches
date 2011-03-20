@@ -1,0 +1,74 @@
+# HG changeset patch
+# Parent 0772f59750a8d3328880084fc2d80acb6860fb93
+Fix scan hang while searching for networks.
+
+diff -r 0772f59750a8 sbin/ifconfig/ifieee80211.c
+--- a/sbin/ifconfig/ifieee80211.c
++++ b/sbin/ifconfig/ifieee80211.c
+@@ -3229,6 +3229,7 @@
+ 
+ 	memset(&sr, 0, sizeof(sr));
+ 	sr.sr_flags = IEEE80211_IOC_SCAN_ACTIVE
++		    | IEEE80211_IOC_SCAN_BGSCAN
+ 		    | IEEE80211_IOC_SCAN_NOPICK
+ 		    | IEEE80211_IOC_SCAN_ONCE;
+ 	sr.sr_duration = IEEE80211_IOC_SCAN_FOREVER;
+@@ -3236,8 +3237,12 @@
+ 
+ 	ireq.i_data = &sr;
+ 	ireq.i_len = sizeof(sr);
+-	/* NB: only root can trigger a scan so ignore errors */
+-	if (ioctl(s, SIOCS80211, &ireq) >= 0) {
++	/*
++	 * NB: only root can trigger a scan so ignore errors. Also ignore
++	 * possible errors from net80211, even if no new scan could be
++	 * started there might still be a valid scan cache.
++	 */
++	if (ioctl(s, SIOCS80211, &ireq) == 0) {
+ 		char buf[2048];
+ 		struct if_announcemsghdr *ifan;
+ 		struct rt_msghdr *rtm;
+diff -r 0772f59750a8 sys/net80211/ieee80211_ioctl.c
+--- a/sys/net80211/ieee80211_ioctl.c
++++ b/sys/net80211/ieee80211_ioctl.c
+@@ -2430,15 +2430,14 @@
+ 	} else {
+ 		vap->iv_flags_ext &= ~IEEE80211_FEXT_SCANREQ;
+ 		IEEE80211_UNLOCK(ic);
+-		/* XXX neeed error return codes */
+ 		if (sr.sr_flags & IEEE80211_IOC_SCAN_CHECK) {
+-			(void) ieee80211_check_scan(vap, sr.sr_flags,
++			return ieee80211_check_scan(vap, sr.sr_flags,
+ 			    sr.sr_duration, sr.sr_mindwell, sr.sr_maxdwell,
+ 			    sr.sr_nssid,
+ 			    /* NB: cheat, we assume structures are compatible */
+ 			    (const struct ieee80211_scan_ssid *) &sr.sr_ssid[0]);
+ 		} else {
+-			(void) ieee80211_start_scan(vap, sr.sr_flags,
++			return ieee80211_start_scan(vap, sr.sr_flags,
+ 			    sr.sr_duration, sr.sr_mindwell, sr.sr_maxdwell,
+ 			    sr.sr_nssid,
+ 			    /* NB: cheat, we assume structures are compatible */
+diff -r 0772f59750a8 sys/net80211/ieee80211_scan.c
+--- a/sys/net80211/ieee80211_scan.c
++++ b/sys/net80211/ieee80211_scan.c
+@@ -416,6 +416,8 @@
+ 				vap->iv_stats.is_scan_passive++;
+ 			if (flags & IEEE80211_SCAN_FLUSH)
+ 				ss->ss_ops->scan_flush(ss);
++			if (flags & IEEE80211_SCAN_BGSCAN)
++				ic->ic_flags_ext |= IEEE80211_FEXT_BGSCAN;
+ 
+ 			/* NB: flush frames rx'd before 1st channel change */
+ 			SCAN_PRIVATE(ss)->ss_iflags |= ISCAN_DISCARD;
+@@ -436,8 +438,9 @@
+ 		IEEE80211_DPRINTF(vap, IEEE80211_MSG_SCAN,
+ 		    "%s: %s scan already in progress\n", __func__,
+ 		    ss->ss_flags & IEEE80211_SCAN_ACTIVE ? "active" : "passive");
++		return 1;
+ 	}
+-	return (ic->ic_flags & IEEE80211_F_SCAN);
++	return !((ic->ic_flags & IEEE80211_F_SCAN) == IEEE80211_F_SCAN);
+ }
+ 
+ /*
