@@ -9,3 +9,4 @@ ps-usersystime.patch
 ifconfig_scan_hang.patch
 pf-rc-startstop.patch
 rc-status-cleanup.patch
+sched-priority.patch
