@@ -1,0 +1,116 @@
+# HG changeset patch
+# Parent e8bc025f8d6a63983559e026f2fb3a757eca87fd
+r217410 Realtime thread scheduling change patch
+
+diff -r e8bc025f8d6a sys/kern/sched_4bsd.c
+--- a/sys/kern/sched_4bsd.c
++++ b/sys/kern/sched_4bsd.c
+@@ -912,7 +912,7 @@
+ 	THREAD_LOCK_ASSERT(td, MA_OWNED);
+ 	td->td_slptick = ticks;
+ 	td->td_sched->ts_slptime = 0;
+-	if (pri)
++	if (pri != 0 && PRI_BASE(td->td_pri_class) == PRI_TIMESHARE)
+ 		sched_prio(td, pri);
+ 	if (TD_IS_SUSPENDED(td) || pri >= PSOCK)
+ 		td->td_flags |= TDF_CANSWAP;
+diff -r e8bc025f8d6a sys/kern/sched_ule.c
+--- a/sys/kern/sched_ule.c
++++ b/sys/kern/sched_ule.c
+@@ -122,11 +122,17 @@
+ 
+ /*
+  * Priority ranges used for interactive and non-interactive timeshare
+- * threads.  Interactive threads use realtime priorities.
++ * threads.  The timeshare priorities are split up into four ranges.
++ * The first range handles interactive threads.  The last three ranges
++ * (NHALF, x, and NHALF) handle non-interactive threads with the outer
++ * ranges supporting nice values.
+  */
+-#define	PRI_MIN_INTERACT	PRI_MIN_REALTIME
+-#define	PRI_MAX_INTERACT	PRI_MAX_REALTIME
+-#define	PRI_MIN_BATCH		PRI_MIN_TIMESHARE
++#define	PRI_TIMESHARE_RANGE	(PRI_MAX_TIMESHARE - PRI_MIN_TIMESHARE + 1)
++#define	PRI_INTERACT_RANGE	((PRI_TIMESHARE_RANGE - SCHED_PRI_NRESV) / 2)
++
++#define	PRI_MIN_INTERACT	PRI_MIN_TIMESHARE
++#define	PRI_MAX_INTERACT	(PRI_MIN_TIMESHARE + PRI_INTERACT_RANGE - 1)
++#define	PRI_MIN_BATCH		(PRI_MIN_TIMESHARE + PRI_INTERACT_RANGE)
+ #define	PRI_MAX_BATCH		PRI_MAX_TIMESHARE
+ 
+ /*
+@@ -1911,6 +1917,8 @@
+ 	td->td_slptick = ticks;
+ 	if (TD_IS_SUSPENDED(td) || prio >= PSOCK)
+ 		td->td_flags |= TDF_CANSWAP;
++	if (PRI_BASE(td->td_pri_class) != PRI_TIMESHARE)
++		return;
+ 	if (static_boost == 1 && prio)
+ 		sched_prio(td, prio);
+ 	else if (static_boost && td->td_priority > static_boost)
+diff -r e8bc025f8d6a sys/kern/subr_sleepqueue.c
+--- a/sys/kern/subr_sleepqueue.c
++++ b/sys/kern/subr_sleepqueue.c
+@@ -737,7 +737,8 @@
+ 
+ 	/* Adjust priority if requested. */
+ 	MPASS(pri == 0 || (pri >= PRI_MIN && pri <= PRI_MAX));
+-	if (pri != 0 && td->td_priority > pri)
++	if (pri != 0 && td->td_priority > pri &&
++	    PRI_BASE(td->td_pri_class) == PRI_TIMESHARE)
+ 		sched_prio(td, pri);
+ 
+ 	/*
+diff -r e8bc025f8d6a sys/sys/priority.h
+--- a/sys/sys/priority.h
++++ b/sys/sys/priority.h
+@@ -67,10 +67,10 @@
+  * Priorities range from 0 to 255, but differences of less then 4 (RQ_PPQ)
+  * are insignificant.  Ranges are as follows:
+  *
+- * Interrupt threads:		0 - 63
+- * Top half kernel threads:	64 - 127
+- * Realtime user threads:	128 - 159
+- * Time sharing user threads:	160 - 223
++ * Interrupt threads:		0 - 47
++ * Realtime user threads:	48 - 79
++ * Top half kernel threads:	80 - 119
++ * Time sharing user threads:	120 - 223
+  * Idle user threads:		224 - 255
+  *
+  * XXX If/When the specific interrupt thread and top half thread ranges
+@@ -81,7 +81,7 @@
+ #define	PRI_MAX			(255)		/* Lowest priority. */
+ 
+ #define	PRI_MIN_ITHD		(PRI_MIN)
+-#define	PRI_MAX_ITHD		(PRI_MIN_KERN - 1)
++#define	PRI_MAX_ITHD		(PRI_MIN_REALTIME - 1)
+ 
+ #define	PI_REALTIME		(PRI_MIN_ITHD + 0)
+ #define	PI_AV			(PRI_MIN_ITHD + 4)
+@@ -92,8 +92,11 @@
+ #define	PI_SOFT			(PRI_MIN_ITHD + 36)
+ #define	PI_SWI(x)		(PI_SOFT + (x) * RQ_PPQ)
+ 
+-#define	PRI_MIN_KERN		(64)
+-#define	PRI_MAX_KERN		(PRI_MIN_REALTIME - 1)
++#define	PRI_MIN_REALTIME	(48)
++#define	PRI_MAX_REALTIME	(PRI_MIN_KERN - 1)
++
++#define	PRI_MIN_KERN		(80)
++#define	PRI_MAX_KERN		(PRI_MIN_TIMESHARE - 1)
+ 
+ #define	PSWP			(PRI_MIN_KERN + 0)
+ #define	PVM			(PRI_MIN_KERN + 4)
+@@ -106,10 +109,7 @@
+ #define	PLOCK			(PRI_MIN_KERN + 36)
+ #define	PPAUSE			(PRI_MIN_KERN + 40)
+ 
+-#define	PRI_MIN_REALTIME	(128)
+-#define	PRI_MAX_REALTIME	(PRI_MIN_TIMESHARE - 1)
+-
+-#define	PRI_MIN_TIMESHARE	(160)
++#define	PRI_MIN_TIMESHARE	(120)
+ #define	PRI_MAX_TIMESHARE	(PRI_MIN_IDLE - 1)
+ 
+ #define	PUSER			(PRI_MIN_TIMESHARE)
