@@ -5,7 +5,6 @@ icmp6-ll-Fix-pr146534.patch
 getset+facl-recursive.patch
 cyclic_clock_func_t.patch
 o_nofollow-eloop.patch
-ps-usersystime.patch
 ifconfig_scan_hang.patch
 pf-rc-startstop.patch
 rc-status-cleanup.patch
