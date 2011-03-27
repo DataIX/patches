@@ -1,0 +1,29 @@
+# HG changeset patch
+# Parent 3e7931865d911f8f40e8ab9af9f7c626fdba2b39
+Count how man times adv went negative
+
+diff -r 3e7931865d91 sys/netinet/tcp_output.c
+--- a/sys/netinet/tcp_output.c
++++ b/sys/netinet/tcp_output.c
+@@ -87,6 +87,10 @@
+ extern struct mbuf *m_copypack();
+ #endif
+ 
++VNET_DEFINE(int, adv_neg) = 0;
++SYSCTL_VNET_INT(_net_inet_tcp, OID_AUTO, adv_neg, CTLFLAG_RD,
++   &VNET_NAME(adv_neg), 1, "How many times adv went negative");
++
+ VNET_DEFINE(int, path_mtu_discovery) = 1;
+ SYSCTL_VNET_INT(_net_inet_tcp, OID_AUTO, path_mtu_discovery, CTLFLAG_RW,
+ 	&VNET_NAME(path_mtu_discovery), 1,
+@@ -573,6 +577,10 @@
+ 		long adv = min(recwin, (long)TCP_MAXWIN << tp->rcv_scale) -
+ 			(tp->rcv_adv - tp->rcv_nxt);
+ 
++		if(min(recwin, (long)TCP_MAXWIN << tp->rcv_scale) <
++				(tp->rcv_adv - tp->rcv_nxt))
++			adv_neg++;
++
+ 		if (adv >= (long) (2 * tp->t_maxseg))
+ 			goto send;
+ 		if (2 * adv >= (long) so->so_rcv.sb_hiwat)
