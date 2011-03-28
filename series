@@ -9,5 +9,6 @@ ifconfig_scan_hang.patch
 pf-rc-startstop.patch
 rc-status-cleanup.patch
 sched-priority.patch
-tcp_output_huge-window.patch
+tcp_output_huge-window.patch #+ringset1
 tcp_output_adv_neg-sysctl.patch
+tcp_input_rcv_wnd.patch

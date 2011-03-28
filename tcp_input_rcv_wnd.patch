@@ -1,0 +1,16 @@
+# HG changeset patch
+# Parent 9c4c5eb45e49ba4a1ddda13f85a9daa4cbcdb499
+rcv_wnd patch from The tale of a TCP bug
+
+diff -r 9c4c5eb45e49 sys/netinet/tcp_input.c
+--- a/sys/netinet/tcp_input.c
++++ b/sys/netinet/tcp_input.c
+@@ -1496,6 +1496,8 @@
+ 	win = sbspace(&so->so_rcv);
+ 	if (win < 0)
+ 		win = 0;
++	if (win > TCP_MAXWIN << tp->rcv_scale)
++		win = TCP_MAXWIN << tp->rcv_scale;
+ 	tp->rcv_wnd = imax(win, (int)(tp->rcv_adv - tp->rcv_nxt));
+ 
+ 	/* Reset receive buffer auto scaling when not in bulk receive mode. */
