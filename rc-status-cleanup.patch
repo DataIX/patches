@@ -1,20 +1,8 @@
 # HG changeset patch
-# Parent 3eabf6009cf2c978bd4e5bcb8e65df7188308f06
+# Parent 52eb582f82c5d8ac474731324eb3cd14e69c0e65
 Cleanup double appearances of (status) in help output
 
-diff -r 3eabf6009cf2 etc/rc.d/ip6addrctl
---- a/etc/rc.d/ip6addrctl
-+++ b/etc/rc.d/ip6addrctl
-@@ -14,7 +14,7 @@
- rcvar=`set_rcvar`
- start_cmd="ip6addrctl_start"
- stop_cmd="ip6addrctl_stop"
--extra_commands="status prefer_ipv6 prefer_ipv4"
-+extra_commands="prefer_ipv6 prefer_ipv4"
- status_cmd="ip6addrctl"
- prefer_ipv6_cmd="ip6addrctl_prefer_ipv6"
- prefer_ipv4_cmd="ip6addrctl_prefer_ipv4"
-diff -r 3eabf6009cf2 etc/rc.d/ipfilter
+diff -r 52eb582f82c5 etc/rc.d/ipfilter
 --- a/etc/rc.d/ipfilter
 +++ b/etc/rc.d/ipfilter
 @@ -23,7 +23,7 @@
@@ -26,7 +14,7 @@ diff -r 3eabf6009cf2 etc/rc.d/ipfilter
  required_modules="ipl:ipfilter"
  
  ipfilter_start()
-diff -r 3eabf6009cf2 etc/rc.d/pf
+diff -r 52eb582f82c5 etc/rc.d/pf
 --- a/etc/rc.d/pf
 +++ b/etc/rc.d/pf
 @@ -19,7 +19,7 @@
