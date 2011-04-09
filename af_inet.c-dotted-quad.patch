@@ -1,0 +1,15 @@
+# HG changeset patch
+# Parent dbdf7ee01437436e614ed77cd508545cdcfe7a90
+
+diff -r dbdf7ee01437 sbin/ifconfig/af_inet.c
+--- a/sbin/ifconfig/af_inet.c
++++ b/sbin/ifconfig/af_inet.c
+@@ -79,7 +79,7 @@
+ 	sin = (struct sockaddr_in *)ifa->ifa_netmask;
+ 	if (sin == NULL)
+ 		sin = &null_sin;
+-	printf("netmask 0x%lx ", (unsigned long)ntohl(sin->sin_addr.s_addr));
++	printf("netmask %s ", inet_ntoa(sin->sin_addr));
+ 
+ 	if (ifa->ifa_flags & IFF_BROADCAST) {
+ 		sin = (struct sockaddr_in *)ifa->ifa_broadaddr;
