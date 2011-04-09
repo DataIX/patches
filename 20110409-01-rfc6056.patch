@@ -1,6 +1,6 @@
 # HG changeset patch
 # Parent 0b64756243b94c04d600cc450c79a94e9f8a5bec
-RFC6506 stable/8 r220504, Supercedes: 20110303-01-rfc6056.patch
+RFC6056 stable/8 r220504, Supercedes: 20110303-01-rfc6056.patch
 
 diff -r 0b64756243b9 sys/netinet/in_pcb.c
 --- a/sys/netinet/in_pcb.c
