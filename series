@@ -1,7 +1,7 @@
 newvers.sh.patch
 time24.patch
 icmp6-ll-Fix-pr146534.patch
-20110303-01-rfc6056.patch #+hold
+20110303-01-rfc6056.patch #+r220489
 getset+facl-recursive.patch
 cyclic_clock_func_t.patch #+archive
 o_nofollow-eloop.patch #+archive
