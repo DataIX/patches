@@ -1,0 +1,100 @@
+# HG changeset patch
+# Parent fa3d046f7d9501a5fa8d45f827abf70ea70af6fe
+Add our mods to awk 20100523 from r201988
+
+diff -r fa3d046f7d95 contrib/one-true-awk/b.c
+--- a/contrib/one-true-awk/b.c
++++ b/contrib/one-true-awk/b.c
+@@ -288,9 +288,21 @@
+ 	return c;
+ }
+ 
++static int collate_range_cmp(int a, int b)
++{
++	static char s[2][2];
++
++	if ((uschar)a == (uschar)b)
++		return 0;
++	s[0][0] = a;
++	s[1][0] = b;
++	return (strcoll(s[0], s[1]));
++}
++
+ char *cclenter(const char *argp)	/* add a character class */
+ {
+ 	int i, c, c2;
++	int j;
+ 	uschar *p = (uschar *) argp;
+ 	uschar *op, *bp;
+ 	static uschar *buf = 0;
+@@ -309,15 +321,18 @@
+ 				c2 = *p++;
+ 				if (c2 == '\\')
+ 					c2 = quoted((char **) &p);
+-				if (c > c2) {	/* empty; ignore */
++				if (collate_range_cmp(c, c2) > 0) {
+ 					bp--;
+ 					i--;
+ 					continue;
+ 				}
+-				while (c < c2) {
++				for (j = 0; j < NCHARS; j++) {
++					if ((collate_range_cmp(c, j) > 0) ||
++					    collate_range_cmp(j, c2) > 0)
++						continue;
+ 					if (!adjbuf((char **) &buf, &bufsz, bp-buf+2, 100, (char **) &bp, "cclenter1"))
+ 						FATAL("out of space for character class [%.10s...] 2", p);
+-					*bp++ = ++c;
++					*bp++ = j;
+ 					i++;
+ 				}
+ 				continue;
+diff -r fa3d046f7d95 contrib/one-true-awk/main.c
+--- a/contrib/one-true-awk/main.c
++++ b/contrib/one-true-awk/main.c
+@@ -61,6 +61,7 @@
+ 	const char *fs = NULL;
+ 
+ 	setlocale(LC_CTYPE, "");
++	setlocale(LC_COLLATE, "");
+ 	setlocale(LC_NUMERIC, "C"); /* for parsing cmdline & prog */
+ 	cmdname = argv[0];
+ 	if (argc == 1) {
+@@ -89,13 +90,18 @@
+ 				safe = 1;
+ 			break;
+ 		case 'f':	/* next argument is program filename */
+-			argc--;
+-			argv++;
+-			if (argc <= 1)
+-				FATAL("no program filename");
+-			if (npfile >= MAX_PFILE - 1)
+-				FATAL("too many -f options"); 
+-			pfile[npfile++] = argv[1];
++			if (argv[1][2] != 0) {	/* arg is -fsomething */
++				if (npfile >= MAX_PFILE - 1)
++					FATAL("too many -f options");
++				pfile[npfile++] = &argv[1][2];
++			} else {		/* arg is -f something */
++				argc--; argv++;
++				if (argc <= 1)
++					FATAL("no program filename");
++				if (npfile >= MAX_PFILE - 1)
++					FATAL("too many -f options"); 
++				pfile[npfile++] = argv[1];
++			}
+ 			break;
+ 		case 'F':	/* set field separator */
+ 			if (argv[1][2] != 0) {	/* arg is -Fsomething */
+diff -r fa3d046f7d95 contrib/one-true-awk/run.c
+--- a/contrib/one-true-awk/run.c
++++ b/contrib/one-true-awk/run.c
+@@ -656,7 +656,7 @@
+ 		j = x->fval - y->fval;
+ 		i = j<0? -1: (j>0? 1: 0);
+ 	} else {
+-		i = strcmp(getsval(x), getsval(y));
++		i = strcoll(getsval(x), getsval(y));
+ 	}
+ 	tempfree(x);
+ 	tempfree(y);
