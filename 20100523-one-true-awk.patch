@@ -1,0 +1,200 @@
+# HG changeset patch
+# Parent 99f11f60d74787bb48ece79d7d21bf32d9e84433
+Update awk to 20100523 http://www.cs.princeton.edu/~bwk/btl.mirror/
+
+diff -r 99f11f60d747 contrib/one-true-awk/FIXES
+--- a/contrib/one-true-awk/FIXES
++++ b/contrib/one-true-awk/FIXES
+@@ -25,6 +25,17 @@
+ This file lists all bug fixes, changes, etc., made since the AWK book
+ was sent to the printers in August, 1987.
+ 
++May 23, 2010:
++	fixed long-standing overflow bug in run.c; many thanks to
++	nelson beebe for spotting it and providing the fix.
++
++	fixed bug that didn't parse -vd=1 properly; thanks to santiago
++	vila for spotting it.
++
++Feb 8, 2010:
++	i give up.  replaced isblank with isspace in b.c; there are
++	no consistent header files.
++
+ Nov 26, 2009:
+ 	fixed a long-standing issue with when FS takes effect.  a
+ 	change to FS is now noticed immediately for subsequent splits.
+diff -r 99f11f60d747 contrib/one-true-awk/b.c
+--- a/contrib/one-true-awk/b.c
++++ b/contrib/one-true-awk/b.c
+@@ -288,21 +288,9 @@
+ 	return c;
+ }
+ 
+-static int collate_range_cmp(int a, int b)
+-{
+-	static char s[2][2];
+-
+-	if ((uschar)a == (uschar)b)
+-		return 0;
+-	s[0][0] = a;
+-	s[1][0] = b;
+-	return (strcoll(s[0], s[1]));
+-}
+-
+ char *cclenter(const char *argp)	/* add a character class */
+ {
+ 	int i, c, c2;
+-	int j;
+ 	uschar *p = (uschar *) argp;
+ 	uschar *op, *bp;
+ 	static uschar *buf = 0;
+@@ -321,18 +309,15 @@
+ 				c2 = *p++;
+ 				if (c2 == '\\')
+ 					c2 = quoted((char **) &p);
+-				if (collate_range_cmp(c, c2) > 0) {
++				if (c > c2) {	/* empty; ignore */
+ 					bp--;
+ 					i--;
+ 					continue;
+ 				}
+-				for (j = 0; j < NCHARS; j++) {
+-					if ((collate_range_cmp(c, j) > 0) ||
+-					    collate_range_cmp(j, c2) > 0)
+-						continue;
++				while (c < c2) {
+ 					if (!adjbuf((char **) &buf, &bufsz, bp-buf+2, 100, (char **) &bp, "cclenter1"))
+ 						FATAL("out of space for character class [%.10s...] 2", p);
+-					*bp++ = j;
++					*bp++ = ++c;
+ 					i++;
+ 				}
+ 				continue;
+@@ -752,7 +737,7 @@
+ /* #define HAS_ISBLANK */
+ #ifndef HAS_ISBLANK
+ 
+-int (isblank)(int c)
++int (xisblank)(int c)
+ {
+ 	return c==' ' || c=='\t';
+ }
+@@ -766,7 +751,7 @@
+ } charclasses[] = {
+ 	{ "alnum",	5,	isalnum },
+ 	{ "alpha",	5,	isalpha },
+-	{ "blank",	5,	isblank },
++	{ "blank",	5,	isspace }, /* was isblank */
+ 	{ "cntrl",	5,	iscntrl },
+ 	{ "digit",	5,	isdigit },
+ 	{ "graph",	5,	isgraph },
+diff -r 99f11f60d747 contrib/one-true-awk/main.c
+--- a/contrib/one-true-awk/main.c
++++ b/contrib/one-true-awk/main.c
+@@ -25,7 +25,7 @@
+ #include <sys/cdefs.h>
+ __FBSDID("$FreeBSD: stable/8/contrib/one-true-awk/main.c 202360 2010-01-15 14:20:01Z ru $");
+ 
+-const char	*version = "version 20091126 (FreeBSD)";
++const char	*version = "version 20100523 (FreeBSD)";
+ 
+ #define DEBUG
+ #include <stdio.h>
+@@ -61,7 +61,6 @@
+ 	const char *fs = NULL;
+ 
+ 	setlocale(LC_CTYPE, "");
+-	setlocale(LC_COLLATE, "");
+ 	setlocale(LC_NUMERIC, "C"); /* for parsing cmdline & prog */
+ 	cmdname = argv[0];
+ 	if (argc == 1) {
+@@ -90,18 +89,13 @@
+ 				safe = 1;
+ 			break;
+ 		case 'f':	/* next argument is program filename */
+-			if (argv[1][2] != 0) {	/* arg is -fsomething */
+-				if (npfile >= MAX_PFILE - 1)
+-					FATAL("too many -f options"); 
+-				pfile[npfile++] = &argv[1][2];
+-			} else {		/* arg is -f something */
+-				argc--; argv++;
+-				if (argc <= 1)
+-					FATAL("no program filename");
+-				if (npfile >= MAX_PFILE - 1)
+-					FATAL("too many -f options"); 
+-				pfile[npfile++] = argv[1];
+-			}
++			argc--;
++			argv++;
++			if (argc <= 1)
++				FATAL("no program filename");
++			if (npfile >= MAX_PFILE - 1)
++				FATAL("too many -f options"); 
++			pfile[npfile++] = argv[1];
+ 			break;
+ 		case 'F':	/* set field separator */
+ 			if (argv[1][2] != 0) {	/* arg is -Fsomething */
+@@ -120,14 +114,10 @@
+ 				WARNING("field separator FS is empty");
+ 			break;
+ 		case 'v':	/* -v a=1 to be done NOW.  one -v for each */
+-			if (argv[1][2] != 0) {	/* arg is -vsomething */
+-				if (argv[1][2] != 0)
+-					setclvar(&argv[1][2]);
+-			} else {		/* arg is -v something */
+-				argc--; argv++;
+-				if (argc > 1 && isclvar(argv[1]))
+-					setclvar(argv[1]);
+-			}
++			if (argv[1][2] == '\0' && --argc > 1 && isclvar((++argv)[1]))
++				setclvar(argv[1]);
++			else if (argv[1][2] != '\0')
++				setclvar(&argv[1][2]);
+ 			break;
+ 		case 'd':
+ 			dbg = atoi(&argv[1][2]);
+diff -r 99f11f60d747 contrib/one-true-awk/makefile
+--- a/contrib/one-true-awk/makefile
++++ b/contrib/one-true-awk/makefile
+@@ -26,13 +26,12 @@
+ CFLAGS = -O2
+ CFLAGS =
+ 
++CC = gcc -Wall -g
++CC = cc
+ CC = gcc -Wall -g -Wwrite-strings
+ CC = gcc -fprofile-arcs -ftest-coverage # then gcov f1.c; cat f1.c.gcov
+-CC = gcc -Wall -g
+-CC = cc
+ CC = gcc -O4
+ 
+-
+ YACC = bison -y
+ YACC = yacc
+ YFLAGS = -d
+diff -r 99f11f60d747 contrib/one-true-awk/run.c
+--- a/contrib/one-true-awk/run.c
++++ b/contrib/one-true-awk/run.c
+@@ -656,7 +656,7 @@
+ 		j = x->fval - y->fval;
+ 		i = j<0? -1: (j>0? 1: 0);
+ 	} else {
+-		i = strcoll(getsval(x), getsval(y));
++		i = strcmp(getsval(x), getsval(y));
+ 	}
+ 	tempfree(x);
+ 	tempfree(y);
+@@ -1890,9 +1890,10 @@
+ 		adjbuf(&buf, &bufsz, 1+strlen(sptr)+pb-buf, 0, &pb, "gsub");
+ 		while ((*pb++ = *sptr++) != 0)
+ 			;
+-	done:	if (pb > buf + bufsz)
+-			FATAL("gsub result2 %.30s too big; can't happen", buf);
+-		*pb = '\0';
++	done:	if (pb < buf + bufsz)
++			*pb = '\0';
++		else if (*(pb-1) != '\0')
++			FATAL("gsub result2 %.30s truncated; can't happen", buf);
+ 		setsval(x, buf);	/* BUG: should be able to avoid copy + free */
+ 		pfa->initstat = tempstat;
+ 	}
