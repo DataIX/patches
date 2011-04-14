@@ -1,8 +1,8 @@
 # HG changeset patch
-# Parent 3cf2947fbe52fac6d4f35b5068a074aebfbee679
+# Parent 2f25cba80823c780747c6da8b5c496254e325586
 Fixup pf start/stop messages on the console, Enabling pfpf enabled
 
-diff -r 3cf2947fbe52 etc/rc.d/pf
+diff -r 2f25cba80823 etc/rc.d/pf
 --- a/etc/rc.d/pf
 +++ b/etc/rc.d/pf
 @@ -25,7 +25,7 @@
