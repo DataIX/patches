@@ -1,0 +1,4 @@
+# HG changeset patch
+# Parent aa37d382121bf53dadde734bfa1a7200813833d4
+Make pkgdb backup cd(1) and operate only on PKG_DBDIR
+
