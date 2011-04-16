@@ -14,4 +14,3 @@ af_inet.c-dotted-quad.patch
 20100523-one-true-awk.patch #+hold
 20100523-one-true-awk+freebsd.patch #+hold
 220.backup-pkgdb_cd.patch
-20100523-one-true-awk+ports.patch #+needs_work
