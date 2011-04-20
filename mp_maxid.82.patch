@@ -1,0 +1,135 @@
+# HG changeset patch
+# Parent a0f9c52fbb69b2759b444613711eff748572f05c
+kern.smp.maxid error on i386 UP [was: powerd / cpufreq question]
+
+diff -r a0f9c52fbb69 sys/i386/acpica/madt.c
+--- a/sys/i386/acpica/madt.c
++++ b/sys/i386/acpica/madt.c
+@@ -204,7 +204,7 @@
+ 
+ 	apic_register_enumerator(&madt_enumerator);
+ }
+-SYSINIT(madt_register, SI_SUB_CPU - 1, SI_ORDER_SECOND, madt_register, NULL);
++SYSINIT(madt_register, SI_SUB_TUNABLES - 1, SI_ORDER_FIRST, madt_register, NULL);
+ 
+ /*
+  * Call the handler routine for each entry in the MADT table.
+diff -r a0f9c52fbb69 sys/i386/i386/mp_machdep.c
+--- a/sys/i386/i386/mp_machdep.c
++++ b/sys/i386/i386/mp_machdep.c
+@@ -464,8 +464,10 @@
+ 		boot_cpu_id = apic_id;
+ 		cpu_info[apic_id].cpu_bsp = 1;
+ 	}
+-	if (mp_ncpus < MAXCPU)
++	if (mp_ncpus < MAXCPU) {
+ 		mp_ncpus++;
++		mp_maxid = mp_ncpus - 1;
++	}
+ 	if (bootverbose)
+ 		printf("SMP: Added CPU %d (%s)\n", apic_id, boot_cpu ? "BSP" :
+ 		    "AP");
+@@ -475,7 +477,19 @@
+ cpu_mp_setmaxid(void)
+ {
+ 
+-	mp_maxid = MAXCPU - 1;
++	/*
++	 * mp_maxid should be already set by calls to cpu_add().
++	 * Just sanity check its value here.
++	 */
++	if (mp_ncpus == 0)
++		KASSERT(mp_maxid == 0,
++		    ("%s: mp_ncpus is zero, but mp_maxid is not", __func__));
++	else if (mp_ncpus == 1)
++		mp_maxid = 0;
++	else
++		KASSERT(mp_maxid >= mp_ncpus - 1,
++		    ("%s: counters out of sync: max %d, count %d", __func__,
++			mp_maxid, mp_ncpus));
+ }
+ 
+ int
+@@ -503,6 +517,7 @@
+ 		 * One CPU was found, so this must be a UP system with
+ 		 * an I/O APIC.
+ 		 */
++		mp_maxid = 0;
+ 		return (0);
+ 	}
+ 
+diff -r a0f9c52fbb69 sys/i386/xen/mptable.c
+--- a/sys/i386/xen/mptable.c
++++ b/sys/i386/xen/mptable.c
+@@ -109,7 +109,7 @@
+ 
+ 	apic_register_enumerator(&mptable_enumerator);
+ }
+-SYSINIT(mptable_register, SI_SUB_CPU - 1, SI_ORDER_FIRST, mptable_register,
++SYSINIT(mptable_register, SI_SUB_TUNABLES - 1, SI_ORDER_FIRST, mptable_register,
+     NULL);
+ 
+ 
+diff -r a0f9c52fbb69 sys/x86/x86/local_apic.c
+--- a/sys/x86/x86/local_apic.c
++++ b/sys/x86/x86/local_apic.c
+@@ -1285,7 +1285,7 @@
+ 	if (resource_disabled("apic", 0))
+ 		return;
+ 
+-	/* First, probe all the enumerators to find the best match. */
++	/* Probe all the enumerators to find the best match. */
+ 	best_enum = NULL;
+ 	best = 0;
+ 	SLIST_FOREACH(enumerator, &enumerators, apic_next) {
+@@ -1321,13 +1321,12 @@
+ 	}
+ #endif
+ 
+-	/* Second, probe the CPU's in the system. */
++	/* Probe the CPU's in the system. */
+ 	retval = best_enum->apic_probe_cpus();
+ 	if (retval != 0)
+ 		printf("%s: Failed to probe CPUs: returned %d\n",
+ 		    best_enum->apic_name, retval);
+ 
+-#ifdef __amd64__
+ }
+ SYSINIT(apic_init, SI_SUB_TUNABLES - 1, SI_ORDER_SECOND, apic_init, NULL);
+ 
+@@ -1342,19 +1341,14 @@
+  
+ 	if (best_enum == NULL)
+ 		return;
+-#endif
+-	/* Third, initialize the local APIC. */
++
++	/* Initialize the local APIC. */
+ 	retval = best_enum->apic_setup_local();
+ 	if (retval != 0)
+ 		printf("%s: Failed to setup the local APIC: returned %d\n",
+ 		    best_enum->apic_name, retval);
+ }
+-#ifdef __amd64__
+-SYSINIT(apic_setup_local, SI_SUB_CPU, SI_ORDER_SECOND, apic_setup_local,
+-    NULL);
+-#else
+-SYSINIT(apic_init, SI_SUB_CPU, SI_ORDER_SECOND, apic_init, NULL);
+-#endif
++SYSINIT(apic_setup_local, SI_SUB_CPU, SI_ORDER_SECOND, apic_setup_local, NULL);
+ 
+ /*
+  * Setup the I/O APICs.
+diff -r a0f9c52fbb69 sys/x86/x86/mptable.c
+--- a/sys/x86/x86/mptable.c
++++ b/sys/x86/x86/mptable.c
+@@ -391,7 +391,8 @@
+ 
+ 	apic_register_enumerator(&mptable_enumerator);
+ }
+-SYSINIT(mptable_register, SI_SUB_MPTBL, SI_ORDER_FIRST, mptable_register, NULL);
++SYSINIT(mptable_register, SI_SUB_TUNABLES - 1, SI_ORDER_FIRST, mptable_register,
++    NULL);
+ 
+ /*
+  * Call the handler routine for each entry in the MP config table.
