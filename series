@@ -2,11 +2,10 @@ newvers.sh.patch
 time24.patch
 icmp6-ll-Fix-pr146534.patch
 getset+facl-recursive.patch
-cyclic_clock_func_t.patch #+archive
+cyclic_clock_func_t.patch
 o_nofollow-eloop.patch #+archive
 ifconfig_scan_hang.patch #+archive
 pf-rc-startstop.patch
-rc-status-cleanup.patch #+archive
 sched-priority.patch
 af_inet.c-dotted-quad.patch
 220.backup-pkgdb_cd.patch
