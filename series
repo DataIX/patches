@@ -12,3 +12,4 @@ af_inet.c-dotted-quad.patch
 220.backup-pkgdb_cd.patch
 thr_once.c_thr_check_init.patch
 mp_maxid.82.patch
+kmod-dtrace.patch
