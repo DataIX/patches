@@ -2,7 +2,7 @@ newvers.sh.patch
 time24.patch
 icmp6-ll-Fix-pr146534.patch
 getset+facl-recursive.patch
-cyclic_clock_func_t.patch
+cyclic_clock_func_t.patch #+hold
 o_nofollow-eloop.patch #+archive
 ifconfig_scan_hang.patch #+archive
 pf-rc-startstop.patch
@@ -12,3 +12,4 @@ af_inet.c-dotted-quad.patch
 thr_once.c_thr_check_init.patch
 mp_maxid.82.patch
 kmod-dtrace.patch
+800.scrub-zfs_hyphen.patch
