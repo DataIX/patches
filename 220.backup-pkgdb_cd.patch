@@ -1,17 +1,16 @@
 # HG changeset patch
-# Parent aa37d382121bf53dadde734bfa1a7200813833d4
+# Parent ef09545f1ed1d8d8037e94599109a32947f93a9b
 Make pkgdb backup cd(1) and operate only on PKG_DBDIR
 
-diff -r aa37d382121b etc/periodic/daily/220.backup-pkgdb
+diff -r ef09545f1ed1 etc/periodic/daily/220.backup-pkgdb
 --- a/etc/periodic/daily/220.backup-pkgdb
 +++ b/etc/periodic/daily/220.backup-pkgdb
-@@ -33,7 +33,8 @@
+@@ -33,7 +33,7 @@
  
  	new_bak_file=`mktemp ${bak_file}-XXXXX`
  
 -	if tar -cjf "${new_bak_file}" "$pkg_dbdir"; then
-+	cd $pkg_dbdir/..
-+	if tar -cjf "${new_bak_file}" "$(basename $pkg_dbdir)"; then
++	if tar -C $pkg_dbdir/.. -cjf "${new_bak_file}" "$(basename $pkg_dbdir)"; then
  	    chmod 644 "${new_bak_file}"
  
  	    if [ -e "${bak_file}.2" -a -e "${bak_file}" ]; then
