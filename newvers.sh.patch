@@ -1,10 +1,19 @@
 # HG changeset patch
-# Parent 70128ad036a053c7cc0a07032659f4ee189ad053
+# Parent 71fdf25c4edb219a20bd2958519d3aaf3ab90422
 
-diff -r 70128ad036a0 sys/conf/newvers.sh
+diff -r 71fdf25c4edb sys/conf/newvers.sh
 --- a/sys/conf/newvers.sh
 +++ b/sys/conf/newvers.sh
-@@ -39,15 +39,18 @@
+@@ -30,6 +30,8 @@
+ #	@(#)newvers.sh	8.1 (Berkeley) 4/20/94
+ # $FreeBSD: stable/8/sys/conf/newvers.sh 219009 2011-02-24 20:44:11Z kensmith $
+ 
++PATH=/usr/bin:/bin:/usr/sbin:/sbin
++
+ TYPE="FreeBSD"
+ REVISION="8.2"
+ BRANCH="STABLE"
+@@ -39,15 +41,18 @@
  RELEASE="${REVISION}-${BRANCH}"
  VERSION="${TYPE} ${RELEASE}"
  
@@ -25,7 +34,7 @@ diff -r 70128ad036a0 sys/conf/newvers.sh
  b=share/examples/etc/bsd-style-copyright
  year=`date '+%Y'`
  # look for copyright template
-@@ -78,65 +81,77 @@
+@@ -78,65 +83,77 @@
  "
  
  LC_ALL=C; export LC_ALL
@@ -141,7 +150,7 @@ diff -r 70128ad036a0 sys/conf/newvers.sh
  #define RELSTR "${RELEASE}"
  
  char sccs[sizeof(SCCSSTR) > 128 ? sizeof(SCCSSTR) : 128] = SCCSSTR;
-@@ -147,4 +162,4 @@
+@@ -147,4 +164,4 @@
  char kern_ident[] = "${i}";
  EOF
  
