@@ -52,7 +52,7 @@ new file mode 100755
 +		echo ""
 +		echo "Check for files with an unknown user or group:"
 +
-+		MP="${daily_status_security_chksetuid_dirs:-`mount -t ufs,zfs |awk '{print $3}' |xargs`}"
++		MP="${daily_status_security_chknoid_dirs:-`mount -t ufs,zfs |awk '{print $3}' |xargs`}"
 +		echo "Directories, $MP"
 +		find -sxH $MP /dev/null \
 +			\( ! -fstype local -prune -or -name \* \) -and \
