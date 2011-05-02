@@ -66,6 +66,17 @@ new file mode 100755
 +esac
 +
 +exit $rc
+diff --git a/etc/periodic/security/Makefile b/etc/periodic/security/Makefile
+--- a/etc/periodic/security/Makefile
++++ b/etc/periodic/security/Makefile
+@@ -6,6 +6,7 @@
+ 	110.neggrpperm \
+ 	200.chkmounts \
+ 	300.chkuid0 \
++	310.chknoid \
+ 	400.passwdless \
+ 	410.logincheck \
+ 	700.kernelmsg \
 diff --git a/etc/periodic/weekly/340.noid b/etc/periodic/weekly/340.noid
 deleted file mode 100755
 --- a/etc/periodic/weekly/340.noid
@@ -100,3 +111,16 @@ deleted file mode 100755
 -esac
 -
 -exit $rc
+diff --git a/etc/periodic/weekly/Makefile b/etc/periodic/weekly/Makefile
+--- a/etc/periodic/weekly/Makefile
++++ b/etc/periodic/weekly/Makefile
+@@ -2,8 +2,7 @@
+ 
+ .include <bsd.own.mk>
+ 
+-FILES=	340.noid \
+-	999.local
++FILES=	999.local
+ 
+ # NB: keep these sorted by MK_* knobs
+ 
