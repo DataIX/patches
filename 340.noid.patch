@@ -1,0 +1,57 @@
+# HG changeset patch
+# Parent 8d783b8cadbe7cf9a1c58bda87b5199d57018dca
+Adjust weekly noid checks to provide fine tuning and better output
+
+diff -r 8d783b8cadbe etc/defaults/periodic.conf
+--- a/etc/defaults/periodic.conf
++++ b/etc/defaults/periodic.conf
+@@ -229,7 +229,7 @@
+ 
+ # 340.noid
+ weekly_noid_enable="NO"					# Find unowned files
+-weekly_noid_dirs="/"					# Look here
++#weekly_noid_dirs="/"					# Search list.
+ 
+ # 400.status-pkg
+ weekly_status_pkg_enable="NO"				# Find out-of-date pkgs
+diff -r 8d783b8cadbe etc/periodic/weekly/340.noid
+--- a/etc/periodic/weekly/340.noid
++++ b/etc/periodic/weekly/340.noid
+@@ -7,23 +7,24 @@
+ #
+ if [ -r /etc/defaults/periodic.conf ]
+ then
+-    . /etc/defaults/periodic.conf
+-    source_periodic_confs
++	. /etc/defaults/periodic.conf
++	source_periodic_confs
+ fi
+ 
+ case "$weekly_noid_enable" in
+-    [Yy][Ee][Ss])
+-	echo ""
+-	echo "Check for files with an unknown user or group:"
++	[Yy][Ee][Ss])
++		echo ""
++		echo "Check for files with an unknown user or group:"
+ 
+-	rc=$(find -H ${weekly_noid_dirs:-/} \
+-	    \( ! -fstype local -prune -or -name \* \) -and \
+-	    \( -nogroup -o -nouser \) -print | sed 's/^/  /' |
+-	    tee /dev/stderr | wc -l)
+-	[ $rc -gt 1 ] && rc=1
+-	;;
+-
+-    *)  rc=0;;
++		MP="${weekly_noid_dirs:-`mount -t ufs,zfs |awk '{print $3}' |xargs`}"
++		echo "Directories, $MP"
++		find -sxH $MP /dev/null \
++			\( ! -fstype local -prune -or -name \* \) -and \
++			\( -nogroup -o -nouser \) |sed 's/^/  /' |\
++			xargs ls -l
++		rc=$?
++		;;
++	*)  rc=0;;
+ esac
+ 
+ exit $rc
