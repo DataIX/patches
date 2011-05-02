@@ -10,7 +10,7 @@ diff --git a/etc/defaults/periodic.conf b/etc/defaults/periodic.conf
  daily_status_security_chkuid0_enable="YES"
  
 +# 310.chknoid
-+daily_status_security_chknoid_enable="YES"		# Find unowned files
++daily_status_security_chknoid_enable="NO"		# Find unowned files
 +#daily_status_security_chknoid_dirs="/"			# Search directories
 +
  # 400.passwdless
