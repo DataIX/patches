@@ -17,7 +17,7 @@ diff -r 8d783b8cadbe etc/defaults/periodic.conf
 diff -r 8d783b8cadbe etc/periodic/weekly/340.noid
 --- a/etc/periodic/weekly/340.noid
 +++ b/etc/periodic/weekly/340.noid
-@@ -7,23 +7,24 @@
+@@ -7,23 +7,28 @@
  #
  if [ -r /etc/defaults/periodic.conf ]
  then
@@ -27,6 +27,8 @@ diff -r 8d783b8cadbe etc/periodic/weekly/340.noid
 +	source_periodic_confs
  fi
  
++. /etc/periodic/security/security.functions
++
  case "$weekly_noid_enable" in
 -    [Yy][Ee][Ss])
 -	echo ""
@@ -47,11 +49,13 @@ diff -r 8d783b8cadbe etc/periodic/weekly/340.noid
 +		echo "Directories, $MP"
 +		find -sxH $MP /dev/null \
 +			\( ! -fstype local -prune -or -name \* \) -and \
-+			\( -nogroup -o -nouser \) |sed 's/^/  /' |\
-+			xargs ls -l
++			\( -nogroup -o -nouser \) -exec ls -liTd \{\} \+ |
++		check_diff noid - "${host} noid diffs:"
 +		rc=$?
 +		;;
-+	*)  rc=0;;
++	*)
++		rc=0
++		;;
  esac
  
  exit $rc
