@@ -2,50 +2,57 @@
 # Parent 8d783b8cadbe7cf9a1c58bda87b5199d57018dca
 Adjust weekly noid checks to provide fine tuning and better output
 
-diff -r 8d783b8cadbe etc/defaults/periodic.conf
+diff --git a/etc/defaults/periodic.conf b/etc/defaults/periodic.conf
 --- a/etc/defaults/periodic.conf
 +++ b/etc/defaults/periodic.conf
-@@ -229,7 +229,7 @@
+@@ -172,6 +172,10 @@
+ # 300.chkuid0
+ daily_status_security_chkuid0_enable="YES"
  
- # 340.noid
- weekly_noid_enable="NO"					# Find unowned files
++# 310.chknoid
++daily_status_security_chknoid_enable="YES"		# Find unowned files
++#daily_status_security_chknoid_dirs="/"			# Search directories
++
+ # 400.passwdless
+ daily_status_security_passwdless_enable="YES"
+ 
+@@ -227,10 +231,6 @@
+ # 330.catman
+ weekly_catman_enable="NO"				# Preformat man pages
+ 
+-# 340.noid
+-weekly_noid_enable="NO"					# Find unowned files
 -weekly_noid_dirs="/"					# Look here
-+#weekly_noid_dirs="/"					# Search list.
- 
+-
  # 400.status-pkg
  weekly_status_pkg_enable="NO"				# Find out-of-date pkgs
-diff -r 8d783b8cadbe etc/periodic/weekly/340.noid
---- a/etc/periodic/weekly/340.noid
-+++ b/etc/periodic/weekly/340.noid
-@@ -7,23 +7,28 @@
- #
- if [ -r /etc/defaults/periodic.conf ]
- then
--    . /etc/defaults/periodic.conf
--    source_periodic_confs
+ pkg_version=pkg_version					# Use this program
+diff --git a/etc/periodic/security/310.chknoid b/etc/periodic/security/310.chknoid
+new file mode 100755
+--- /dev/null
++++ b/etc/periodic/security/310.chknoid
+@@ -0,0 +1,34 @@
++#!/bin/sh -
++#
++# $FreeBSD: stable/8/etc/periodic/weekly/340.noid 220107 2011-03-28 19:22:55Z dougb $
++#
++
++# If there is a global system configuration file, suck it in.
++#
++if [ -r /etc/defaults/periodic.conf ]
++then
 +	. /etc/defaults/periodic.conf
 +	source_periodic_confs
- fi
- 
++fi
++
 +. /etc/periodic/security/security.functions
 +
- case "$weekly_noid_enable" in
--    [Yy][Ee][Ss])
--	echo ""
--	echo "Check for files with an unknown user or group:"
++case "$daily_status_security_chknoid_enable" in
 +	[Yy][Ee][Ss])
 +		echo ""
 +		echo "Check for files with an unknown user or group:"
- 
--	rc=$(find -H ${weekly_noid_dirs:-/} \
--	    \( ! -fstype local -prune -or -name \* \) -and \
--	    \( -nogroup -o -nouser \) -print | sed 's/^/  /' |
--	    tee /dev/stderr | wc -l)
--	[ $rc -gt 1 ] && rc=1
--	;;
--
--    *)  rc=0;;
-+		MP="${weekly_noid_dirs:-`mount -t ufs,zfs |awk '{print $3}' |xargs`}"
++
++		MP="${daily_status_security_chksetuid_dirs:-`mount -t ufs,zfs |awk '{print $3}' |xargs`}"
 +		echo "Directories, $MP"
 +		find -sxH $MP /dev/null \
 +			\( ! -fstype local -prune -or -name \* \) -and \
@@ -56,6 +63,40 @@ diff -r 8d783b8cadbe etc/periodic/weekly/340.noid
 +	*)
 +		rc=0
 +		;;
- esac
- 
- exit $rc
++esac
++
++exit $rc
+diff --git a/etc/periodic/weekly/340.noid b/etc/periodic/weekly/340.noid
+deleted file mode 100755
+--- a/etc/periodic/weekly/340.noid
++++ /dev/null
+@@ -1,29 +0,0 @@
+-#!/bin/sh -
+-#
+-# $FreeBSD: stable/8/etc/periodic/weekly/340.noid 220107 2011-03-28 19:22:55Z dougb $
+-#
+-
+-# If there is a global system configuration file, suck it in.
+-#
+-if [ -r /etc/defaults/periodic.conf ]
+-then
+-    . /etc/defaults/periodic.conf
+-    source_periodic_confs
+-fi
+-
+-case "$weekly_noid_enable" in
+-    [Yy][Ee][Ss])
+-	echo ""
+-	echo "Check for files with an unknown user or group:"
+-
+-	rc=$(find -H ${weekly_noid_dirs:-/} \
+-	    \( ! -fstype local -prune -or -name \* \) -and \
+-	    \( -nogroup -o -nouser \) -print | sed 's/^/  /' |
+-	    tee /dev/stderr | wc -l)
+-	[ $rc -gt 1 ] && rc=1
+-	;;
+-
+-    *)  rc=0;;
+-esac
+-
+-exit $rc
