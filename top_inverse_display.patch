@@ -1,0 +1,52 @@
+# HG changeset patch
+# Parent ba084f398f09de6a9635de3f198151872cc63c0d
+top(1) inverse display of table header
+
+diff -r ba084f398f09 contrib/top/display.c
+--- a/contrib/top/display.c
++++ b/contrib/top/display.c
+@@ -698,7 +698,7 @@
+ 	int width;
+ 
+ 	s = NULL;
+-	width = display_width;
++	width = screen_width;
+ 	header_length = strlen(text);
+ 	if (header_length >= width) {
+ 		s = malloc((width + 1) * sizeof(char));
+@@ -706,6 +706,14 @@
+ 			return (NULL);
+ 		strncpy(s, text, width);
+ 		s[width] = '\0';
++	} else {
++		s = malloc((width + 1) * sizeof(char));
++		if (s == NULL)
++			return (NULL);
++		strncpy(s, text, width);
++		while (screen_width > header_length)
++			s[header_length++] = ' ';
++		s[width] = '\0';
+ 	}
+ 	return (s);
+ }
+@@ -730,7 +738,7 @@
+     if (header_status == ON)
+     {
+ 	putchar('\n');
+-	fputs(text, stdout);
++	standout(text, stdout);
+ 	lastline++;
+     }
+     else if (header_status == ERASE)
+diff -r ba084f398f09 contrib/top/top.h
+--- a/contrib/top/top.h
++++ b/contrib/top/top.h
+@@ -14,7 +14,7 @@
+ extern int Header_lines;	/* 7 */
+ 
+ /* Maximum number of columns allowed for display */
+-#define MAX_COLS	128
++#define MAX_COLS	512
+ 
+ /* Log base 2 of 1024 is 10 (2^10 == 1024) */
+ #define LOG1024		10
