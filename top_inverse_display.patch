@@ -1,8 +1,8 @@
 # HG changeset patch
-# Parent ba084f398f09de6a9635de3f198151872cc63c0d
+# Parent 7f717b1529c1a97dce4b4ab37cbfcdf1702d483a
 top(1) inverse display of table header
 
-diff -r ba084f398f09 contrib/top/display.c
+diff -r 7f717b1529c1 contrib/top/display.c
 --- a/contrib/top/display.c
 +++ b/contrib/top/display.c
 @@ -698,7 +698,7 @@
@@ -38,7 +38,7 @@ diff -r ba084f398f09 contrib/top/display.c
  	lastline++;
      }
      else if (header_status == ERASE)
-diff -r ba084f398f09 contrib/top/top.h
+diff -r 7f717b1529c1 contrib/top/top.h
 --- a/contrib/top/top.h
 +++ b/contrib/top/top.h
 @@ -14,7 +14,7 @@
