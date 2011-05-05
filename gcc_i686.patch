@@ -1,0 +1,16 @@
+# HG changeset patch
+# Parent b8776508e8ec2eca71733c2c4225695225297307
+Bump gcc up to compiling 686 or higher code.
+
+diff -r b8776508e8ec contrib/gcc/config/i386/i386.c
+--- a/contrib/gcc/config/i386/i386.c
++++ b/contrib/gcc/config/i386/i386.c
+@@ -1748,7 +1748,7 @@
+ 	     "-mtune=generic instead as appropriate.");
+ 
+   if (!ix86_arch_string)
+-    ix86_arch_string = TARGET_64BIT ? "x86-64" : "i486";
++    ix86_arch_string = TARGET_64BIT ? "x86-64" : "i686";
+   if (!strcmp (ix86_arch_string, "generic"))
+     error ("generic CPU can be used only for -mtune= switch");
+   if (!strncmp (ix86_arch_string, "generic", 7))
