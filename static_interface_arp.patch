@@ -1,0 +1,255 @@
+# HG changeset patch
+# Parent 51aa740478c51cf5d95fcb14a6781de1865171f1
+From Thread Subject: interface ip arp
+
+diff -r 51aa740478c5 sys/net/if_llatbl.c
+--- a/sys/net/if_llatbl.c
++++ b/sys/net/if_llatbl.c
+@@ -228,7 +228,8 @@
+ #endif
+ 
+ void
+-lltable_prefix_free(int af, struct sockaddr *prefix, struct sockaddr *mask)
++lltable_prefix_free(int af, struct sockaddr *prefix, struct sockaddr *mask,
++	    u_int flags)
+ {
+ 	struct lltable *llt;
+ 
+@@ -237,7 +238,7 @@
+ 		if (llt->llt_af != af)
+ 			continue;
+ 
+-		llt->llt_prefix_free(llt, prefix, mask);
++		llt->llt_prefix_free(llt, prefix, mask, flags);
+ 	}
+ 	LLTABLE_RUNLOCK();
+ }
+diff -r 51aa740478c5 sys/net/if_llatbl.h
+--- a/sys/net/if_llatbl.h
++++ b/sys/net/if_llatbl.h
+@@ -150,7 +150,8 @@
+ 	void			(*llt_free)(struct lltable *, struct llentry *);
+ 	void			(*llt_prefix_free)(struct lltable *,
+ 				    const struct sockaddr *prefix,
+-				    const struct sockaddr *mask);
++				    const struct sockaddr *mask,
++				    u_int flags);
+ 	struct llentry *	(*llt_lookup)(struct lltable *, u_int flags,
+ 				    const struct sockaddr *l3addr);
+ 	int			(*llt_rtcheck)(struct ifnet *, u_int flags,
+@@ -179,7 +180,7 @@
+ struct lltable *lltable_init(struct ifnet *, int);
+ void		lltable_free(struct lltable *);
+ void		lltable_prefix_free(int, struct sockaddr *, 
+-                       struct sockaddr *);
++                       struct sockaddr *, u_int);
+ #if 0
+ void		lltable_drain(int);
+ #endif
+diff -r 51aa740478c5 sys/netinet/in.c
+--- a/sys/netinet/in.c
++++ b/sys/netinet/in.c
+@@ -70,7 +70,7 @@
+ 	struct ifnet *, struct thread *);
+ 
+ static int	in_addprefix(struct in_ifaddr *, int);
+-static int	in_scrubprefix(struct in_ifaddr *);
++static int	in_scrubprefix(struct in_ifaddr *, u_int);
+ static void	in_socktrim(struct sockaddr_in *);
+ static int	in_ifinit(struct ifnet *,
+ 	    struct in_ifaddr *, struct sockaddr_in *, int);
+@@ -548,7 +548,7 @@
+ 			 * is the same as before, then the call is 
+ 			 * un-necessarily executed here.
+ 			 */
+-			in_ifscrub(ifp, ia);
++			in_ifscrub(ifp, ia, 0);
+ 			ia->ia_sockmask = ifra->ifra_mask;
+ 			ia->ia_sockmask.sin_family = AF_INET;
+ 			ia->ia_subnetmask =
+@@ -557,7 +557,7 @@
+ 		}
+ 		if ((ifp->if_flags & IFF_POINTOPOINT) &&
+ 		    (ifra->ifra_dstaddr.sin_family == AF_INET)) {
+-			in_ifscrub(ifp, ia);
++			in_ifscrub(ifp, ia, 0);
+ 			ia->ia_dstaddr = ifra->ifra_dstaddr;
+ 			maskIsNew  = 1; /* We lie; but the effect's the same */
+ 		}
+@@ -585,7 +585,7 @@
+ 		/*
+ 		 * in_ifscrub kills the interface route.
+ 		 */
+-		in_ifscrub(ifp, ia);
++		in_ifscrub(ifp, ia, LLE_STATIC);
+ 
+ 		/*
+ 		 * in_ifadown gets rid of all the rest of
+@@ -829,10 +829,10 @@
+  * Delete any existing route for an interface.
+  */
+ void
+-in_ifscrub(struct ifnet *ifp, struct in_ifaddr *ia)
++in_ifscrub(struct ifnet *ifp, struct in_ifaddr *ia, u_int flags)
+ {
+ 
+-	in_scrubprefix(ia);
++	in_scrubprefix(ia, flags);
+ }
+ 
+ /*
+@@ -887,7 +887,7 @@
+ 	splx(s);
+ 	if (scrub) {
+ 		ia->ia_ifa.ifa_addr = (struct sockaddr *)&oldaddr;
+-		in_ifscrub(ifp, ia);
++		in_ifscrub(ifp, ia, LLE_STATIC);
+ 		ia->ia_ifa.ifa_addr = (struct sockaddr *)&ia->ia_addr;
+ 	}
+ 	if (IN_CLASSA(i))
+@@ -1095,7 +1095,7 @@
+  * otherwise.
+  */
+ static int
+-in_scrubprefix(struct in_ifaddr *target)
++in_scrubprefix(struct in_ifaddr *target, u_int flags)
+ {
+ 	struct in_ifaddr *ia;
+ 	struct in_addr prefix, mask, p;
+@@ -1130,13 +1130,15 @@
+ 				RT_REMREF(ia_ro.ro_rt);
+ 			RTFREE_LOCKED(ia_ro.ro_rt);
+ 		}
+-		if (freeit)
++		if (freeit && (flags & LLE_STATIC)) {
+ 			error = ifa_del_loopback_route((struct ifaddr *)target,
+ 				       (struct sockaddr *)&target->ia_addr);
+-		if (error == 0)
+-			target->ia_flags &= ~IFA_RTSELF;
+-		/* remove arp cache */
+-		arp_ifscrub(target->ia_ifp, IA_SIN(target)->sin_addr.s_addr);
++			if (error == 0)
++				target->ia_flags &= ~IFA_RTSELF;
++		}
++		if (flags & LLE_STATIC)
++			/* remove arp cache */
++			arp_ifscrub(target->ia_ifp, IA_SIN(target)->sin_addr.s_addr);
+ 	}
+ 
+ 	if (rtinitflags(target))
+@@ -1203,7 +1205,7 @@
+ 	mask0.sin_family = AF_INET;
+ 	mask0.sin_addr.s_addr = target->ia_subnetmask;
+ 	lltable_prefix_free(AF_INET, (struct sockaddr *)&prefix0, 
+-			    (struct sockaddr *)&mask0);
++			    (struct sockaddr *)&mask0, flags);
+ 
+ 	/*
+ 	 * As no-one seem to have this prefix, we can remove the route.
+@@ -1362,7 +1364,8 @@
+ static void
+ in_lltable_prefix_free(struct lltable *llt, 
+ 		       const struct sockaddr *prefix,
+-		       const struct sockaddr *mask)
++		       const struct sockaddr *mask,
++		       u_int flags)
+ {
+ 	const struct sockaddr_in *pfx = (const struct sockaddr_in *)prefix;
+ 	const struct sockaddr_in *msk = (const struct sockaddr_in *)mask;
+@@ -1373,8 +1376,13 @@
+ 	for (i=0; i < LLTBL_HASHTBL_SIZE; i++) {
+ 		LIST_FOREACH_SAFE(lle, &llt->lle_head[i], lle_next, next) {
+ 
++		        /* 
++			 * (flags & LLE_STATIC) means deleting all entries
++			 * including static ARP entries
++			 */
+ 			if (IN_ARE_MASKED_ADDR_EQUAL((struct sockaddr_in *)L3_ADDR(lle), 
+-						     pfx, msk)) {
++						     pfx, msk) &&
++			    ((flags & LLE_STATIC) || !(lle->la_flags & LLE_STATIC))) {
+ 				int canceled;
+ 
+ 				canceled = callout_drain(&lle->la_timer);
+diff -r 51aa740478c5 sys/netinet/in_var.h
+--- a/sys/netinet/in_var.h
++++ b/sys/netinet/in_var.h
+@@ -447,7 +447,7 @@
+ void	in_rtqdrain(void);
+ void	ip_input(struct mbuf *);
+ int	in_ifadown(struct ifaddr *ifa, int);
+-void	in_ifscrub(struct ifnet *, struct in_ifaddr *);
++void	in_ifscrub(struct ifnet *, struct in_ifaddr *, u_int);
+ struct	mbuf	*ip_fastforward(struct mbuf *);
+ void	*in_domifattach(struct ifnet *);
+ void	in_domifdetach(struct ifnet *, void *);
+diff -r 51aa740478c5 sys/netinet/raw_ip.c
+--- a/sys/netinet/raw_ip.c
++++ b/sys/netinet/raw_ip.c
+@@ -63,6 +63,7 @@
+ #include <netinet/in_systm.h>
+ #include <netinet/in_pcb.h>
+ #include <netinet/in_var.h>
++#include <netinet/if_ether.h>
+ #include <netinet/ip.h>
+ #include <netinet/ip_var.h>
+ #include <netinet/ip_mroute.h>
+@@ -716,7 +717,7 @@
+ 				/*
+ 				 * in_ifscrub kills the interface route.
+ 				 */
+-				in_ifscrub(ia->ia_ifp, ia);
++				in_ifscrub(ia->ia_ifp, ia, 0);
+ 				/*
+ 				 * in_ifadown gets rid of all the rest of the
+ 				 * routes.  This is not quite the right thing
+@@ -751,12 +752,18 @@
+ 		    || (ifp->if_flags & IFF_POINTOPOINT))
+ 			flags |= RTF_HOST;
+ 
++		err = ifa_del_loopback_route((struct ifaddr *)ia, sa);
++		if (err == 0)
++			ia->ia_flags &= ~IFA_RTSELF;
++
+ 		err = rtinit(&ia->ia_ifa, RTM_ADD, flags);
+ 		if (err == 0)
+ 			ia->ia_flags |= IFA_ROUTE;
++
+ 		err = ifa_add_loopback_route((struct ifaddr *)ia, sa);
+ 		if (err == 0)
+ 			ia->ia_flags |= IFA_RTSELF;
++
+ 		ifa_free(&ia->ia_ifa);
+ 		break;
+ 	}
+diff -r 51aa740478c5 sys/netinet6/in6.c
+--- a/sys/netinet6/in6.c
++++ b/sys/netinet6/in6.c
+@@ -2351,19 +2351,25 @@
+ static void
+ in6_lltable_prefix_free(struct lltable *llt, 
+ 			const struct sockaddr *prefix,
+-			const struct sockaddr *mask)
++			const struct sockaddr *mask,
++			u_int flags)
+ {
+ 	const struct sockaddr_in6 *pfx = (const struct sockaddr_in6 *)prefix;
+ 	const struct sockaddr_in6 *msk = (const struct sockaddr_in6 *)mask;
+ 	struct llentry *lle, *next;
+ 	register int i;
+ 
++	/*
++	 * (flags & LLE_STATIC) means deleting all entries 
++	 * including static ND6 entries
++	 */
+ 	for (i=0; i < LLTBL_HASHTBL_SIZE; i++) {
+ 		LIST_FOREACH_SAFE(lle, &llt->lle_head[i], lle_next, next) {
+ 			if (IN6_ARE_MASKED_ADDR_EQUAL(
+ 				    &((struct sockaddr_in6 *)L3_ADDR(lle))->sin6_addr, 
+ 				    &pfx->sin6_addr, 
+-				    &msk->sin6_addr)) {
++				    &msk->sin6_addr) &&
++			    ((flags & LLE_STATIC) || !(lle->la_flags & LLE_STATIC))) {
+ 				int canceled;
+ 
+ 				canceled = callout_drain(&lle->la_timer);
