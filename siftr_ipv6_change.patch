@@ -1,0 +1,15 @@
+# HG changeset patch
+# Parent 561c53e1561e86f785a35d58c831a24aeb83c878
+Adjust SIFTR to include IPv6
+
+diff -r 561c53e1561e sys/modules/siftr/Makefile
+--- a/sys/modules/siftr/Makefile
++++ b/sys/modules/siftr/Makefile
+@@ -7,6 +7,6 @@
+ SRCS=	siftr.c
+ 
+ # Uncomment to add IPv6 support
+-#CFLAGS+=-DSIFTR_IPV6
++CFLAGS+=-DSIFTR_IPV6
+ 
+ .include <bsd.kmod.mk>
