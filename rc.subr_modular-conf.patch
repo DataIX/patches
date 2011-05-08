@@ -1,0 +1,30 @@
+# HG changeset patch
+# Parent 8ede9d465ee952f22b587fc9b615d78f2d978110
+Create usefulness in rc.subr etc/rc.conf.d/*.conf namespace.
+
+diff -r 8ede9d465ee9 etc/rc.subr
+--- a/etc/rc.subr
++++ b/etc/rc.subr
+@@ -1055,9 +1055,19 @@
+ 		fi
+ 		_rc_conf_loaded=true
+ 	fi
+-	if [ -f /etc/rc.conf.d/"$_name" ]; then
+-		debug "Sourcing /etc/rc.conf.d/${_name}"
+-		. /etc/rc.conf.d/"$_name"
++	if [ -d /etc/rc.conf.d ]; then
++		if [ -f /etc/rc.conf.d/"$_name" ]; then
++			debug "Sourcing /etc/rc.conf.d/${_name}"
++			. /etc/rc.conf.d/"$_name"
++		fi
++
++		local _modular_conf
++		for _modular_conf in /etc/rc.conf.d/*.conf; do
++			if [ -f "$_modular_conf" -a -x "$_modular_conf" ]; then
++				debug "Sourcing $_modular_conf"
++				. $_modular_conf
++			fi
++		done
+ 	fi
+ 
+ 	# Old variable names support
