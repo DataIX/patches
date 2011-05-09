@@ -22,7 +22,7 @@ diff -r 8ede9d465ee9 etc/rc.subr
 +		for _modular_conf in /etc/rc.conf.d/*.conf; do
 +			if [ -f "$_modular_conf" -a -x "$_modular_conf" ]; then
 +				debug "Sourcing $_modular_conf"
-+				. $_modular_conf
++				. "$_modular_conf"
 +			fi
 +		done
  	fi
