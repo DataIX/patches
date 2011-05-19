@@ -24,3 +24,28 @@ diff -r 13d344bb0d26 contrib/libpcap/bpf/net/bpf_filter.c
  			continue;
  
  		case BPF_JMP|BPF_JGT|BPF_K:
+diff -r 13d344bb0d26 sys/net/bpf_filter.c
+--- a/sys/net/bpf_filter.c
++++ b/sys/net/bpf_filter.c
+@@ -376,8 +376,19 @@
+ 			continue;
+ 
+ 		case BPF_JMP|BPF_JA:
+-			pc += pc->k;
+-			continue;
++#if defined(KERNEL) || defined(_KERNEL)
++	/*
++ 	 * No backward jumps allowed.
++	 */
++ 			pc += pc->k;
++#else
++	/*
++	 * XXX - we currently implement "ip6 protochain"
++	 * with backward jumps, so sign-extend pc->k.
++	 */
++			pc += (bpf_int32)pc->k;
++#endif
++ 			continue;
+ 
+ 		case BPF_JMP|BPF_JGT|BPF_K:
+ 			pc += (A > pc->k) ? pc->jt : pc->jf;
