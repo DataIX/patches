@@ -2,6 +2,28 @@
 # Parent 13d344bb0d26ee460848459757022ea4487916f3
 In userland, sign extend the offset for JA instructions. (libpcap)
 
+diff -r 13d344bb0d26 contrib/ipfilter/bpf_filter.c
+--- a/contrib/ipfilter/bpf_filter.c
++++ b/contrib/ipfilter/bpf_filter.c
+@@ -349,7 +349,18 @@
+ 			continue;
+ 
+ 		case BPF_JMP|BPF_JA:
++#if defined(KERNEL) || defined(_KERNEL)
++	/*
++ 	 * No backward jumps allowed.
++	 */
+ 			pc += pc->k;
++#else
++	/*
++	 * XXX - we currently implement "ip6 protochain"
++	 * with backward jumps, so sign-extend pc->k.
++	 */
++			pc += (bpf_int32)pc->k;
++#endif
+ 			continue;
+ 
+ 		case BPF_JMP|BPF_JGT|BPF_K:
 diff -r 13d344bb0d26 contrib/libpcap/bpf/net/bpf_filter.c
 --- a/contrib/libpcap/bpf/net/bpf_filter.c
 +++ b/contrib/libpcap/bpf/net/bpf_filter.c
@@ -24,20 +46,18 @@ diff -r 13d344bb0d26 contrib/libpcap/bpf/net/bpf_filter.c
  			continue;
  
  		case BPF_JMP|BPF_JGT|BPF_K:
-diff -r 13d344bb0d26 sys/net/bpf_filter.c
---- a/sys/net/bpf_filter.c
-+++ b/sys/net/bpf_filter.c
-@@ -376,8 +376,19 @@
+diff -r 13d344bb0d26 contrib/libpcap/net/bpf_filter.c
+--- a/contrib/libpcap/net/bpf_filter.c
++++ b/contrib/libpcap/net/bpf_filter.c
+@@ -396,7 +396,18 @@
  			continue;
  
  		case BPF_JMP|BPF_JA:
--			pc += pc->k;
--			continue;
 +#if defined(KERNEL) || defined(_KERNEL)
 +	/*
 + 	 * No backward jumps allowed.
 +	 */
-+ 			pc += pc->k;
+ 			pc += pc->k;
 +#else
 +	/*
 +	 * XXX - we currently implement "ip6 protochain"
@@ -45,7 +65,28 @@ diff -r 13d344bb0d26 sys/net/bpf_filter.c
 +	 */
 +			pc += (bpf_int32)pc->k;
 +#endif
-+ 			continue;
+ 			continue;
  
  		case BPF_JMP|BPF_JGT|BPF_K:
- 			pc += (A > pc->k) ? pc->jt : pc->jf;
+diff -r 13d344bb0d26 sys/net/bpf_filter.c
+--- a/sys/net/bpf_filter.c
++++ b/sys/net/bpf_filter.c
+@@ -376,7 +376,18 @@
+ 			continue;
+ 
+ 		case BPF_JMP|BPF_JA:
++#if defined(KERNEL) || defined(_KERNEL)
++	/*
++ 	 * No backward jumps allowed.
++	 */
+ 			pc += pc->k;
++#else
++	/*
++	 * XXX - we currently implement "ip6 protochain"
++	 * with backward jumps, so sign-extend pc->k.
++	 */
++			pc += (bpf_int32)pc->k;
++#endif
+ 			continue;
+ 
+ 		case BPF_JMP|BPF_JGT|BPF_K:
