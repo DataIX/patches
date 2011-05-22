@@ -1,0 +1,31 @@
+# HG changeset patch
+# Parent 34d97359838e3296c9a2f2070c8a4f731daefc58
+Add the capability to use top -m io to ZFS
+
+diff -r 34d97359838e sys/cddl/contrib/opensolaris/uts/common/fs/zfs/dbuf.c
+--- a/sys/cddl/contrib/opensolaris/uts/common/fs/zfs/dbuf.c
++++ b/sys/cddl/contrib/opensolaris/uts/common/fs/zfs/dbuf.c
+@@ -625,6 +625,9 @@
+ 			rw_exit(&dn->dn_struct_rwlock);
+ 		DB_DNODE_EXIT(db);
+ 	} else if (db->db_state == DB_UNCACHED) {
++#ifdef _KERNEL
++		curthread->td_ru.ru_inblock++;
++#endif
+ 		spa_t *spa = dn->dn_objset->os_spa;
+ 
+ 		if (zio == NULL)
+diff -r 34d97359838e sys/cddl/contrib/opensolaris/uts/common/fs/zfs/dmu.c
+--- a/sys/cddl/contrib/opensolaris/uts/common/fs/zfs/dmu.c
++++ b/sys/cddl/contrib/opensolaris/uts/common/fs/zfs/dmu.c
+@@ -400,6 +400,10 @@
+ 		if (read) {
+ 			(void) dbuf_read(db, zio, dbuf_flags);
+ 		}
++#ifdef _KERNEL
++		else
++			curthread->td_ru.ru_oublock++;
++#endif
+ 		dbp[i] = &db->db;
+ 	}
+ 	rw_exit(&dn->dn_struct_rwlock);
