@@ -1,0 +1,175 @@
+# HG changeset patch
+# Parent f61bc7594f4a9c0c407e3a6f37d613f557f55385
+Fixup python paths to use the real path to python on FreeBSD systems
+
+diff -r f61bc7594f4a cddl/contrib/opensolaris/cmd/pyzfs/pyzfs.py
+--- a/cddl/contrib/opensolaris/cmd/pyzfs/pyzfs.py
++++ b/cddl/contrib/opensolaris/cmd/pyzfs/pyzfs.py
+@@ -1,4 +1,4 @@
+-#! /usr/bin/python2.4 -S
++#! /usr/local/bin/python -S
+ #
+ # CDDL HEADER START
+ #
+diff -r f61bc7594f4a cddl/contrib/opensolaris/lib/pyzfs/common/__init__.py
+--- a/cddl/contrib/opensolaris/lib/pyzfs/common/__init__.py
++++ b/cddl/contrib/opensolaris/lib/pyzfs/common/__init__.py
+@@ -1,4 +1,4 @@
+-#! /usr/bin/python2.6
++#! /usr/local/bin/python
+ #
+ # CDDL HEADER START
+ #
+diff -r f61bc7594f4a cddl/contrib/opensolaris/lib/pyzfs/common/allow.py
+--- a/cddl/contrib/opensolaris/lib/pyzfs/common/allow.py
++++ b/cddl/contrib/opensolaris/lib/pyzfs/common/allow.py
+@@ -1,4 +1,4 @@
+-#! /usr/bin/python2.6
++#! /usr/local/bin/python
+ #
+ # CDDL HEADER START
+ #
+diff -r f61bc7594f4a cddl/contrib/opensolaris/lib/pyzfs/common/dataset.py
+--- a/cddl/contrib/opensolaris/lib/pyzfs/common/dataset.py
++++ b/cddl/contrib/opensolaris/lib/pyzfs/common/dataset.py
+@@ -1,4 +1,4 @@
+-#! /usr/bin/python2.6
++#! /usr/local/bin/python
+ #
+ # CDDL HEADER START
+ #
+diff -r f61bc7594f4a cddl/contrib/opensolaris/lib/pyzfs/common/groupspace.py
+--- a/cddl/contrib/opensolaris/lib/pyzfs/common/groupspace.py
++++ b/cddl/contrib/opensolaris/lib/pyzfs/common/groupspace.py
+@@ -1,4 +1,4 @@
+-#! /usr/bin/python2.6
++#! /usr/local/bin/python
+ #
+ # CDDL HEADER START
+ #
+diff -r f61bc7594f4a cddl/contrib/opensolaris/lib/pyzfs/common/holds.py
+--- a/cddl/contrib/opensolaris/lib/pyzfs/common/holds.py
++++ b/cddl/contrib/opensolaris/lib/pyzfs/common/holds.py
+@@ -1,4 +1,4 @@
+-#! /usr/bin/python2.6
++#! /usr/local/bin/python
+ #
+ # CDDL HEADER START
+ #
+diff -r f61bc7594f4a cddl/contrib/opensolaris/lib/pyzfs/common/table.py
+--- a/cddl/contrib/opensolaris/lib/pyzfs/common/table.py
++++ b/cddl/contrib/opensolaris/lib/pyzfs/common/table.py
+@@ -1,4 +1,4 @@
+-#! /usr/bin/python2.6
++#! /usr/local/bin/python
+ #
+ # CDDL HEADER START
+ #
+diff -r f61bc7594f4a cddl/contrib/opensolaris/lib/pyzfs/common/unallow.py
+--- a/cddl/contrib/opensolaris/lib/pyzfs/common/unallow.py
++++ b/cddl/contrib/opensolaris/lib/pyzfs/common/unallow.py
+@@ -1,4 +1,4 @@
+-#! /usr/bin/python2.6
++#! /usr/local/bin/python
+ #
+ # CDDL HEADER START
+ #
+diff -r f61bc7594f4a cddl/contrib/opensolaris/lib/pyzfs/common/userspace.py
+--- a/cddl/contrib/opensolaris/lib/pyzfs/common/userspace.py
++++ b/cddl/contrib/opensolaris/lib/pyzfs/common/userspace.py
+@@ -1,4 +1,4 @@
+-#! /usr/bin/python2.6
++#! /usr/local/bin/python
+ #
+ # CDDL HEADER START
+ #
+diff -r f61bc7594f4a cddl/contrib/opensolaris/lib/pyzfs/common/util.py
+--- a/cddl/contrib/opensolaris/lib/pyzfs/common/util.py
++++ b/cddl/contrib/opensolaris/lib/pyzfs/common/util.py
+@@ -1,4 +1,4 @@
+-#! /usr/bin/python2.6
++#! /usr/local/bin/python
+ #
+ # CDDL HEADER START
+ #
+diff -r f61bc7594f4a contrib/libstdc++/scripts/make_graph.py
+--- a/contrib/libstdc++/scripts/make_graph.py
++++ b/contrib/libstdc++/scripts/make_graph.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/python
++#! /usr/local/bin/python
+ 
+ import string
+ import sys
+diff -r f61bc7594f4a contrib/libstdc++/scripts/make_graphs.py
+--- a/contrib/libstdc++/scripts/make_graphs.py
++++ b/contrib/libstdc++/scripts/make_graphs.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/python
++#! /usr/local/bin/python
+ 
+ import sys
+ import commands
+diff -r f61bc7594f4a contrib/wpa/wpa_supplicant/examples/wpas-test.py
+--- a/contrib/wpa/wpa_supplicant/examples/wpas-test.py
++++ b/contrib/wpa/wpa_supplicant/examples/wpas-test.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/python
++#! /usr/local/bin/python
+ 
+ import dbus
+ import sys, os
+diff -r f61bc7594f4a games/fortune/tools/do_uniq.py
+--- a/games/fortune/tools/do_uniq.py
++++ b/games/fortune/tools/do_uniq.py
+@@ -1,4 +1,4 @@
+-#!/usr/local/bin/python
++#! /usr/local/bin/python
+ #
+ # $FreeBSD: stable/8/games/fortune/tools/do_uniq.py 141477 2005-02-07 21:15:16Z ru $
+ #
+diff -r f61bc7594f4a release/scripts/package-split.py
+--- a/release/scripts/package-split.py
++++ b/release/scripts/package-split.py
+@@ -1,4 +1,4 @@
+-#!/usr/local/bin/python
++#! /usr/local/bin/python
+ #
+ # This script generates a master INDEX file for the CD images built by the
+ # FreeBSD release engineers.  Each disc is given a list of desired packages.
+diff -r f61bc7594f4a sys/xen/interface/foreign/mkchecker.py
+--- a/sys/xen/interface/foreign/mkchecker.py
++++ b/sys/xen/interface/foreign/mkchecker.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/python
++#! /usr/local/bin/python
+ 
+ import sys;
+ from structs import structs;
+diff -r f61bc7594f4a sys/xen/interface/foreign/mkheader.py
+--- a/sys/xen/interface/foreign/mkheader.py
++++ b/sys/xen/interface/foreign/mkheader.py
+@@ -1,4 +1,4 @@
+-#!/usr/bin/python
++#! /usr/local/bin/python
+ 
+ import sys, re;
+ from structs import unions, structs, defines;
+diff -r f61bc7594f4a tools/debugscripts/kld_deb.py
+--- a/tools/debugscripts/kld_deb.py
++++ b/tools/debugscripts/kld_deb.py
+@@ -1,4 +1,4 @@
+-#!/usr/local/bin/python
++#! /usr/local/bin/python
+ #
+ # Copyright 2004 John-Mark Gurney
+ # All rights reserved.
+diff -r f61bc7594f4a tools/sched/schedgraph.py
+--- a/tools/sched/schedgraph.py
++++ b/tools/sched/schedgraph.py
+@@ -1,4 +1,4 @@
+-#!/usr/local/bin/python
++#! /usr/local/bin/python
+ 
+ # Copyright (c) 2002-2003, 2009, Jeffrey Roberson <jeff@freebsd.org>
+ # All rights reserved.
