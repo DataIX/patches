@@ -1,37 +1,35 @@
 # HG changeset patch
-# Parent 532318f98505734384e742ee975e00a33d901ee6
+# Parent 7e6704e2f594d3dcd17e9a9cbaf408e7b2be8935
 misc/156659: periodic/daily/800.scrub-zfs fails on pool names containing a hyphen
 
-diff -r 532318f98505 etc/periodic/daily/800.scrub-zfs
+diff -r 7e6704e2f594 etc/periodic/daily/800.scrub-zfs
 --- a/etc/periodic/daily/800.scrub-zfs
 +++ b/etc/periodic/daily/800.scrub-zfs
-@@ -27,10 +27,13 @@
- 	fi
+@@ -28,11 +28,14 @@
  
+ 	rc=0
  	for pool in ${daily_scrub_zfs_pools}; do
 +
 +		_pool_name=$(echo $pool |cut -f1 -d: |sed 's/://')
 +
  		# sanity check
 -		_status=$(zpool list "${pool}" 2> /dev/null)
-+		_status=$(zpool list "${_pool_name}" 2> /dev/null)
++		_status=$(zpool list "${_pool_name}" 2>/dev/null)
  		if [ $? -ne 0 ]; then
+ 			rc=2
 -			echo "   WARNING: pool '${pool}' specified in"
 +			echo "   WARNING: pool ${_pool_name} specified in"
  			echo "            '/etc/periodic.conf:daily_scrub_zfs_pools'"
  			echo "            does not exist"
  			continue
-@@ -38,7 +41,7 @@
- 		_status=${_status##*$newline}
+@@ -41,22 +44,22 @@
  		case ${_status} in
  		*FAULTED*)
+ 			rc=3
 -			echo "Skipping faulted pool: ${pool}"
 +			echo "Skipping faulted pool: ${_pool_name}"
  			continue ;;
  		esac
- 
-@@ -46,17 +49,17 @@
- 		rc=0
  
  		# determine how many days shall be between scrubs
 -		eval _pool_threshold=\${daily_scrub_zfs_${pool}_threshold}
@@ -43,17 +41,18 @@ diff -r 532318f98505 etc/periodic/daily/800.scrub-zfs
  
 -		_last_scrub=$(zpool history ${pool} | \
 -		    egrep "^[0-9\.\:\-]{19} zpool scrub ${pool}\$" | tail -1 |\
-+		_last_scrub=$(zpool history ${_pool_name} | \
-+		    egrep "^[0-9\.\:\-]{19} zpool scrub ${_pool_name}\$" | tail -1 |\
- 		    cut -d ' ' -f 1)
+-		    cut -d ' ' -f 1)
++		_last_scrub=$(zpool history ${_pool_name} |\
++		    egrep "^[0-9\.\:\-]{19} zpool scrub ${_pool_name}\$" |tail -1 |\
++		    cut -f1 -d' ')
  		if [ -z "${_last_scrub}" ]; then
  			# creation time of the pool if no scrub was done
 -			_last_scrub=$(zpool history ${pool} | \
-+			_last_scrub=$(zpool history ${_pool_name} | \
++			_last_scrub=$(zpool history ${_pool_name} |\
  			    sed -ne '2s/ .*$//p')
  		fi
  
-@@ -64,27 +67,27 @@
+@@ -64,29 +67,29 @@
  		_scrub_diff=$(expr -e \( $(date +%s) - \
  		    $(date -j -f %F.%T ${_last_scrub} +%s) \) / 60 / 60 / 24)
  		if [ ${_scrub_diff} -lt ${_pool_threshold} ]; then
@@ -64,7 +63,7 @@ diff -r 532318f98505 etc/periodic/daily/800.scrub-zfs
  		fi
  
 -		_status="$(zpool status ${pool} | grep scrub:)"
-+		_status="$(zpool status ${_pool_name} | grep scrub:)"
++		_status="$(zpool status ${_pool_name} |grep scrub:)"
  		case "${_status}" in
  			*"scrub in progress"*)
 -				echo "   scrubbing of pool '${pool}' already in progress, skipping:"
@@ -75,12 +74,14 @@ diff -r 532318f98505 etc/periodic/daily/800.scrub-zfs
 -				zpool scrub ${pool}
 +				echo "   starting first scrub (since reboot) of pool '${_pool_name}':"
 +				zpool scrub ${_pool_name}
+ 				[ $rc -eq 0 ] && rc=1
  				;;
  			*)
 -				echo "   starting scrub of pool '${pool}':"
 -				zpool scrub ${pool}
 +				echo "   starting scrub of pool '${_pool_name}':"
 +				zpool scrub ${_pool_name}
+ 				[ $rc -eq 0 ] && rc=1
  				;;
  		esac
  
