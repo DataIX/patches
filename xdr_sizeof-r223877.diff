@@ -1,0 +1,182 @@
+# HG changeset patch
+# Parent 182e125c4502697b8a864f0445602f84901d3e68
+Apply latest xdr_sizeof support to libc.
+
+diff -r 182e125c4502 include/rpc/xdr.h
+--- a/include/rpc/xdr.h
++++ b/include/rpc/xdr.h
+@@ -285,43 +285,46 @@
+  * These are the "generic" xdr routines.
+  */
+ __BEGIN_DECLS
+-extern bool_t	xdr_void(void);
+-extern bool_t	xdr_int(XDR *, int *);
+-extern bool_t	xdr_u_int(XDR *, u_int *);
+-extern bool_t	xdr_long(XDR *, long *);
+-extern bool_t	xdr_u_long(XDR *, u_long *);
+-extern bool_t	xdr_short(XDR *, short *);
+-extern bool_t	xdr_u_short(XDR *, u_short *);
+-extern bool_t	xdr_int16_t(XDR *, int16_t *);
+-extern bool_t	xdr_u_int16_t(XDR *, u_int16_t *);
+-extern bool_t	xdr_uint16_t(XDR *, u_int16_t *);
+-extern bool_t	xdr_int32_t(XDR *, int32_t *);
+-extern bool_t	xdr_u_int32_t(XDR *, u_int32_t *);
+-extern bool_t	xdr_uint32_t(XDR *, u_int32_t *);
+-extern bool_t	xdr_int64_t(XDR *, int64_t *);
+-extern bool_t	xdr_u_int64_t(XDR *, u_int64_t *);
+-extern bool_t	xdr_uint64_t(XDR *, u_int64_t *);
+-extern bool_t	xdr_bool(XDR *, bool_t *);
+-extern bool_t	xdr_enum(XDR *, enum_t *);
+-extern bool_t	xdr_array(XDR *, char **, u_int *, u_int, u_int, xdrproc_t);
+-extern bool_t	xdr_bytes(XDR *, char **, u_int *, u_int);
+-extern bool_t	xdr_opaque(XDR *, char *, u_int);
+-extern bool_t	xdr_string(XDR *, char **, u_int);
+-extern bool_t	xdr_union(XDR *, enum_t *, char *, const struct xdr_discrim *, xdrproc_t);
+-extern bool_t	xdr_char(XDR *, char *);
+-extern bool_t	xdr_u_char(XDR *, u_char *);
+-extern bool_t	xdr_vector(XDR *, char *, u_int, u_int, xdrproc_t);
+-extern bool_t	xdr_float(XDR *, float *);
+-extern bool_t	xdr_double(XDR *, double *);
+-extern bool_t	xdr_quadruple(XDR *, long double *);
+-extern bool_t	xdr_reference(XDR *, char **, u_int, xdrproc_t);
+-extern bool_t	xdr_pointer(XDR *, char **, u_int, xdrproc_t);
+-extern bool_t	xdr_wrapstring(XDR *, char **);
+-extern void	xdr_free(xdrproc_t, void *);
+-extern bool_t	xdr_hyper(XDR *, quad_t *);
+-extern bool_t	xdr_u_hyper(XDR *, u_quad_t *);
+-extern bool_t	xdr_longlong_t(XDR *, quad_t *);
+-extern bool_t	xdr_u_longlong_t(XDR *, u_quad_t *);
++extern bool_t		xdr_void(void);
++extern bool_t		xdr_int(XDR *, int *);
++extern bool_t		xdr_u_int(XDR *, u_int *);
++extern bool_t		xdr_long(XDR *, long *);
++extern bool_t		xdr_u_long(XDR *, u_long *);
++extern bool_t		xdr_short(XDR *, short *);
++extern bool_t		xdr_u_short(XDR *, u_short *);
++extern bool_t		xdr_int16_t(XDR *, int16_t *);
++extern bool_t		xdr_u_int16_t(XDR *, u_int16_t *);
++extern bool_t		xdr_uint16_t(XDR *, u_int16_t *);
++extern bool_t		xdr_int32_t(XDR *, int32_t *);
++extern bool_t		xdr_u_int32_t(XDR *, u_int32_t *);
++extern bool_t		xdr_uint32_t(XDR *, u_int32_t *);
++extern bool_t		xdr_int64_t(XDR *, int64_t *);
++extern bool_t		xdr_u_int64_t(XDR *, u_int64_t *);
++extern bool_t		xdr_uint64_t(XDR *, u_int64_t *);
++extern bool_t		xdr_bool(XDR *, bool_t *);
++extern bool_t		xdr_enum(XDR *, enum_t *);
++extern bool_t		xdr_array(XDR *, char **, u_int *, u_int, u_int,
++			    xdrproc_t);
++extern bool_t		xdr_bytes(XDR *, char **, u_int *, u_int);
++extern bool_t		xdr_opaque(XDR *, char *, u_int);
++extern bool_t		xdr_string(XDR *, char **, u_int);
++extern bool_t		xdr_union(XDR *, enum_t *, char *,
++			    const struct xdr_discrim *, xdrproc_t);
++extern bool_t		xdr_char(XDR *, char *);
++extern bool_t		xdr_u_char(XDR *, u_char *);
++extern bool_t		xdr_vector(XDR *, char *, u_int, u_int, xdrproc_t);
++extern bool_t		xdr_float(XDR *, float *);
++extern bool_t		xdr_double(XDR *, double *);
++extern bool_t		xdr_quadruple(XDR *, long double *);
++extern bool_t		xdr_reference(XDR *, char **, u_int, xdrproc_t);
++extern bool_t		xdr_pointer(XDR *, char **, u_int, xdrproc_t);
++extern bool_t		xdr_wrapstring(XDR *, char **);
++extern void		xdr_free(xdrproc_t, void *);
++extern bool_t		xdr_hyper(XDR *, quad_t *);
++extern bool_t		xdr_u_hyper(XDR *, u_quad_t *);
++extern bool_t		xdr_longlong_t(XDR *, quad_t *);
++extern bool_t		xdr_u_longlong_t(XDR *, u_quad_t *);
++extern unsigned long	xdr_sizeof(xdrproc_t, void *);
+ __END_DECLS
+ 
+ /*
+diff -r 182e125c4502 lib/libc/xdr/Makefile.inc
+--- a/lib/libc/xdr/Makefile.inc
++++ b/lib/libc/xdr/Makefile.inc
+@@ -3,7 +3,8 @@
+ 
+ .PATH: ${.CURDIR}/xdr ${.CURDIR}/.
+ SRCS+=	xdr.c xdr_array.c xdr_float.c xdr_mem.c \
+-	xdr_rec.c xdr_reference.c xdr_stdio.c
++	xdr_rec.c xdr_reference.c xdr_sizeof.c \
++	xdr_stdio.c
+ 
+ SYM_MAPS+=	${.CURDIR}/xdr/Symbol.map
+ 
+@@ -39,6 +40,7 @@
+ 		xdr.3 xdr_reference.3 \
+ 		xdr.3 xdr_setpos.3 \
+ 		xdr.3 xdr_short.3 \
++		xdr.3 xdr_sizeof.3 \
+ 		xdr.3 xdrstdio_create.3 \
+ 		xdr.3 xdr_string.3 \
+ 		xdr.3 xdr_u_char.3 \
+diff -r 182e125c4502 lib/libc/xdr/Symbol.map
+--- a/lib/libc/xdr/Symbol.map
++++ b/lib/libc/xdr/Symbol.map
+@@ -42,7 +42,6 @@
+ 	xdrrec_endofrecord;
+ 	xdr_reference;
+ 	xdr_pointer;
+-	/* xdr_sizeof; */ /* Why is xdr_sizeof.c not included in Makefileinc? */
+ 	xdrstdio_create;
+ };
+ 
+@@ -51,3 +50,7 @@
+ 	xdr_uint32_t;
+ 	xdr_uint64_t;
+ };
++
++FBSD_1.2 {
++	xdr_sizeof;
++};
+diff -r 182e125c4502 lib/libc/xdr/xdr.3
+--- a/lib/libc/xdr/xdr.3
++++ b/lib/libc/xdr/xdr.3
+@@ -31,6 +31,7 @@
+ .Nm xdr_reference ,
+ .Nm xdr_setpos ,
+ .Nm xdr_short ,
++.Nm xdr_sizeof,
+ .Nm xdrstdio_create ,
+ .Nm xdr_string ,
+ .Nm xdr_u_char ,
+@@ -561,6 +562,18 @@
+ integers and their external representations.
+ This routine returns one if it succeeds, zero otherwise.
+ .Pp
++.It Xo
++.Ft unsigned long
++.Xc
++.It Xo
++.Fn xdr_sizeof "xdrproc_t func" "void *data"
++.Xc
++.Pp
++This routine returns the amount of memory required to encode
++.Fa data
++using filter
++.Fa func .
++.Pp
+ .It Li "#ifdef _STDIO_H_"
+ .It Li "/* XDR using stdio library */"
+ .It Xo
+diff -r 182e125c4502 lib/libc/xdr/xdr_sizeof.c
+--- a/lib/libc/xdr/xdr_sizeof.c
++++ b/lib/libc/xdr/xdr_sizeof.c
+@@ -94,7 +94,7 @@
+ 	if (xdrs->x_op != XDR_ENCODE) {
+ 		return (NULL);
+ 	}
+-	if (len < (u_int)xdrs->x_base) {
++	if (len < (u_int)(uintptr_t)xdrs->x_base) {
+ 		/* x_private was already allocated */
+ 		xdrs->x_handy += len;
+ 		return ((int32_t *) xdrs->x_private);
+@@ -106,7 +106,7 @@
+ 			xdrs->x_base = 0;
+ 			return (NULL);
+ 		}
+-		xdrs->x_base = (caddr_t) len;
++		xdrs->x_base = (caddr_t)(uintptr_t)len;
+ 		xdrs->x_handy += len;
+ 		return ((int32_t *) xdrs->x_private);
+ 	}
