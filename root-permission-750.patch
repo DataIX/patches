@@ -1,0 +1,16 @@
+# HG changeset patch
+# Parent 730b5880531b6a3501c287d00517fbe26c018111
+Adjust default install mtree perms to 750 for /root
+
+diff -r 730b5880531b etc/mtree/BSD.root.dist
+--- a/etc/mtree/BSD.root.dist
++++ b/etc/mtree/BSD.root.dist
+@@ -81,7 +81,7 @@
+     ..
+     rescue
+     ..
+-    root
++    root            mode=0750
+     ..
+     sbin
+     ..
