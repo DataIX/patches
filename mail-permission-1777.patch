@@ -14,3 +14,14 @@ diff -r 9510ab19c632 etc/mtree/BSD.var.dist
      ..
      msgs            uname=daemon
      ..
+@@ -85,8 +85,8 @@
+         ..
+ /set gname=wheel
+     ..
+-    tmp             mode=01777
+-        vi.recover      mode=01777
++    tmp             mode=1777
++        vi.recover      mode=1777
+         ..
+     ..
+     yp
