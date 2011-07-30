@@ -5,7 +5,7 @@ Adjust default install mtree perms to 750 for /root
 diff -r 730b5880531b etc/mtree/BSD.root.dist
 --- a/etc/mtree/BSD.root.dist
 +++ b/etc/mtree/BSD.root.dist
-@@ -81,7 +81,7 @@
+@@ -81,11 +81,11 @@
      ..
      rescue
      ..
@@ -13,4 +13,9 @@ diff -r 730b5880531b etc/mtree/BSD.root.dist
 +    root            mode=0750
      ..
      sbin
+     ..
+-    tmp             mode=01777
++    tmp             mode=1777
+     ..
+     usr
      ..
