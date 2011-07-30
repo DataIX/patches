@@ -1,0 +1,16 @@
+# HG changeset patch
+# Parent 9510ab19c632dc20b3fc9ca3a1cdc3a7b16fd955
+Adjust default install mtree perms to 1777 for /var/mail
+
+diff -r 9510ab19c632 etc/mtree/BSD.var.dist
+--- a/etc/mtree/BSD.var.dist
++++ b/etc/mtree/BSD.var.dist
+@@ -51,7 +51,7 @@
+     ..
+     log
+     ..
+-    mail            gname=mail mode=0775
++    mail            gname=mail mode=1777
+     ..
+     msgs            uname=daemon
+     ..
