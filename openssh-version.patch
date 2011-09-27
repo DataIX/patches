@@ -1,0 +1,18 @@
+# HG changeset patch
+# Parent 69d326a334c8e027ea9f672cf9b18cab3cbb5fe9
+Patch OpenSSH for no version information
+
+diff -r 69d326a334c8 crypto/openssh/version.h
+--- a/crypto/openssh/version.h
++++ b/crypto/openssh/version.h
+@@ -5,8 +5,8 @@
+ 
+ #define SSH_VERSION             (ssh_version_get())
+ #define SSH_RELEASE             (ssh_version_get())
+-#define SSH_VERSION_BASE        "OpenSSH_5.4p1"
+-#define SSH_VERSION_ADDENDUM    "FreeBSD-20100308"
++#define SSH_VERSION_BASE        "OpenSSH"
++#define SSH_VERSION_ADDENDUM    "DEC Digital UNIX OSF1 v5.0 910"
+ 
+ const char *ssh_version_get(void);
+ void ssh_version_set_addendum(const char *);
