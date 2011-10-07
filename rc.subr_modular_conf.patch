@@ -1,11 +1,11 @@
 # HG changeset patch
-# Parent b4c6a0af6d8353f40b69a60e13ed307e73f3e6c7
+# Parent 4cd93b60b8443286d95dbfb8ad8735f398ce872f
 Create usefulness in rc.subr etc/rc.conf.d/*.conf namespace.
 
-diff -r b4c6a0af6d83 etc/rc.subr
+diff -r 4cd93b60b844 etc/rc.subr
 --- a/etc/rc.subr
 +++ b/etc/rc.subr
-@@ -1055,9 +1055,19 @@
+@@ -1055,9 +1055,14 @@
  		fi
  		_rc_conf_loaded=true
  	fi
@@ -13,11 +13,6 @@ diff -r b4c6a0af6d83 etc/rc.subr
 -		debug "Sourcing /etc/rc.conf.d/${_name}"
 -		. /etc/rc.conf.d/"$_name"
 +	if [ -d /etc/rc.conf.d ]; then
-+		if [ -f /etc/rc.conf.d/"$_name" ]; then
-+			debug "Sourcing /etc/rc.conf.d/${_name}"
-+			. /etc/rc.conf.d/"$_name"
-+		fi
-+
 +		local _modular_conf
 +		for _modular_conf in /etc/rc.conf.d/*.conf; do
 +			if [ -f "$_modular_conf" -a -x "$_modular_conf" ]; then
