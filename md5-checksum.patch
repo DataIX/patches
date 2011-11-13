@@ -1,0 +1,132 @@
+# HG changeset patch
+# Parent b9d0f9edd7f8dec4b92650b6b0e73dbcd75b5f82
+bin/146541 New Revision: 227488 - add check option to MD5 and friends to compare files against known hash.
+
+diff -r b9d0f9edd7f8 sbin/md5/md5.1
+--- a/sbin/md5/md5.1
++++ b/sbin/md5/md5.1
+@@ -8,18 +8,22 @@
+ .Sh SYNOPSIS
+ .Nm md5
+ .Op Fl pqrtx
++.Op Fl c Ar string
+ .Op Fl s Ar string
+ .Op Ar
+ .Nm sha1
+ .Op Fl pqrtx
++.Op Fl c Ar string
+ .Op Fl s Ar string
+ .Op Ar
+ .Nm sha256
+ .Op Fl pqrtx
++.Op Fl c Ar string
+ .Op Fl s Ar string
+ .Op Ar
+ .Nm rmd160
+ .Op Fl pqrtx
++.Op Fl c Ar string
+ .Op Fl s Ar string
+ .Op Ar
+ .Sh DESCRIPTION
+@@ -73,6 +77,8 @@
+ The hexadecimal checksum of each file listed on the command line is printed
+ after the options are processed.
+ .Bl -tag -width indent
++.It Fl c Ar string
++Compare files to this md5 string
+ .It Fl s Ar string
+ Print a checksum of the given
+ .Ar string .
+@@ -101,7 +107,8 @@
+ and
+ .Nm rmd160
+ utilities exit 0 on success,
+-and 1 if at least one of the input files could not be read.
++1 if at least one of the input files could not be read,
++and 2 if at least one file does not have the same hash as the -c option.
+ .Sh SEE ALSO
+ .Xr cksum 1 ,
+ .Xr md5 3 ,
+diff -r b9d0f9edd7f8 sbin/md5/md5.c
+--- a/sbin/md5/md5.c
++++ b/sbin/md5/md5.c
+@@ -44,6 +44,8 @@
+ int qflag;
+ int rflag;
+ int sflag;
++unsigned char* checkAgainst;
++int	checksFailed;
+ 
+ typedef void (DIGEST_Init)(void *);
+ typedef void (DIGEST_Update)(void *, const unsigned char *, size_t);
+@@ -138,8 +140,13 @@
+  		digest = 0;
+ 
+ 	failed = 0;
+-	while ((ch = getopt(argc, argv, "pqrs:tx")) != -1)
++	checkAgainst = NULL;
++	checksFailed = 0;
++	while ((ch = getopt(argc, argv, "c:pqrs:tx")) != -1)
+ 		switch (ch) {
++		case 'c':
++			checkAgainst = optarg;
++			break;
+ 		case 'p':
+ 			MDFilter(&Algorithm[digest], 1);
+ 			break;
+@@ -173,12 +180,19 @@
+ 				failed++;
+ 			} else {
+ 				if (qflag)
+-					printf("%s\n", p);
++					printf("%s", p);
+ 				else if (rflag)
+-					printf("%s %s\n", p, *argv);
++					printf("%s %s", p, *argv);
+ 				else
+-					printf("%s (%s) = %s\n",
++					printf("%s (%s) = %s",
+ 					    Algorithm[digest].name, *argv, p);
++				if (checkAgainst && strcmp(checkAgainst,p))
++				{
++					checksFailed++;
++					if (!qflag)
++						printf("%s","[ Failed ]");
++				}
++				printf("\n");
+ 			}
+ 		} while (*++argv);
+ 	} else if (!sflag && (optind == 1 || qflag || rflag))
+@@ -186,6 +200,8 @@
+ 
+ 	if (failed != 0)
+ 		return (1);
++	if (checksFailed != 0)
++		return (2);
+ 
+ 	return (0);
+ }
+@@ -198,12 +214,20 @@
+ 	size_t len = strlen(string);
+ 	char buf[HEX_DIGEST_LENGTH];
+ 
++	alg->Data(string,len,buf);
+ 	if (qflag)
+-		printf("%s\n", alg->Data(string, len, buf));
++		printf("%s", buf);
+ 	else if (rflag)
+-		printf("%s \"%s\"\n", alg->Data(string, len, buf), string);
++		printf("%s \"%s\"", buf, string);
+ 	else
+-		printf("%s (\"%s\") = %s\n", alg->name, string, alg->Data(string, len, buf));
++		printf("%s (\"%s\") = %s", alg->name, string, buf);
++	if (checkAgainst && strcmp(buf,checkAgainst))
++	{
++		checksFailed++;
++		if (!qflag)
++			printf("%s"," [ failed ]");
++	}
++	printf("\n");
+ }
+ /*
+  * Measures the time to digest TEST_BLOCK_COUNT TEST_BLOCK_LEN-byte blocks.
