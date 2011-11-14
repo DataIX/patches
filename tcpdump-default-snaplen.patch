@@ -1,0 +1,49 @@
+# HG changeset patch
+# Parent 2b9e98f3dceb2ee920153ca99c37e0f94438ff5b
+Adjust tcpdump DEFAULT_SNAPLEN -> 65535
+
+diff -r 2b9e98f3dceb contrib/tcpdump/interface.h
+--- a/contrib/tcpdump/interface.h
++++ b/contrib/tcpdump/interface.h
+@@ -84,14 +84,10 @@
+ #endif
+ 
+ /*
+- * The default snapshot length.  This value allows most printers to print
+- * useful information while keeping the amount of unwanted data down.
++ * The default snapshot length.
+  */
+-#ifndef INET6
+-#define DEFAULT_SNAPLEN 68	/* ether + IPv4 + TCP + 14 */
+-#else
+-#define DEFAULT_SNAPLEN 96	/* ether + IPv6 + TCP + 22 */
+-#endif
++#define MAXIMUM_SNAPLEN 65535
++#define DEFAULT_SNAPLEN MAXIMUM_SNAPLEN
+ 
+ #ifndef BIG_ENDIAN
+ #define BIG_ENDIAN 4321
+diff -r 2b9e98f3dceb contrib/tcpdump/netdissect.h
+--- a/contrib/tcpdump/netdissect.h
++++ b/contrib/tcpdump/netdissect.h
+@@ -170,17 +170,11 @@
+ #define max(a,b) ((b)>(a)?(b):(a))
+ #endif
+ 
+-#ifndef INET6
+ /*
+- * The default snapshot length.  This value allows most printers to print
+- * useful information while keeping the amount of unwanted data down.
+- * In particular, it allows for an ethernet header, tcp/ip header, and
+- * 14 bytes of data (assuming no ip options).
++ * The default snapshot length.
+  */
+-#define DEFAULT_SNAPLEN 68
+-#else
+-#define DEFAULT_SNAPLEN 96
+-#endif
++#define MAXIMUM_SNAPLEN 65535
++#define DEFAULT_SNAPLEN MAXIMUM_SNAPLEN
+ 
+ #ifndef BIG_ENDIAN
+ #define BIG_ENDIAN 4321
