@@ -1,0 +1,53 @@
+commit 94db09e19945d65ecb9c4e7550751594f753fb66 (HEAD -> master)
+Author: Jason Hellenthal <jhellenthal@DataIX.net>
+Date:   Sat Nov 4 11:06:53 2017 -0500
+
+    Define DISABLE_ACCEPT4 and add sys/types.h
+
+    Signed-off-by: Jason Hellenthal <jhellenthal@DataIX.net>
+
+diff --git a/dpinger.c b/dpinger.c
+index bdd172b..ffe7d29 100644
+--- a/dpinger.c
++++ b/dpinger.c
+@@ -31,6 +31,8 @@
+ // Silly that this is required for accept4 on Linux
+ #define _GNU_SOURCE
+
++#define DISABLE_ACCEPT4
++
+
+ #include <stdio.h>
+ #include <errno.h>
+@@ -45,6 +47,7 @@
+
+ #include <netdb.h>
+ #include <sys/socket.h>
++#include <sys/types.h>
+ #include <net/if.h>
+ #include <sys/un.h>
+ #include <sys/stat.h>
+
+commit 5a28eb09d71223d135674366c0765d78bfcde5e2
+Author: Jason Hellenthal <jhellenthal@DataIX.net>
+Date:   Sat Nov 4 11:05:43 2017 -0500
+
+    Add -fno-strict-aliasing -fstack-protector -pipe and remove -g
+
+    Signed-off-by: Jason Hellenthal <jhellenthal@DataIX.net>
+
+diff --git a/Makefile b/Makefile
+index 9d470af..109d71f 100644
+--- a/Makefile
++++ b/Makefile
+@@ -2,8 +2,8 @@
+ #WARNINGS=-Wall -Wextra -Wformat=2 -Wno-unused-result
+
+ CC=clang
+-WARNINGS=-Weverything -Wno-padded -Wno-disabled-macro-expansion -Wno-reserved-id-macro
++WARNINGS=-Wno-padded -Wno-disabled-macro-expansion
+
+-CFLAGS=${WARNINGS} -pthread -g -O2
++CFLAGS=${WARNINGS} -pthread -O2 -fno-strict-aliasing -fstack-protector -pipe
+
+ all: dpinger
